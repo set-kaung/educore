@@ -35,3 +35,39 @@ EduCore is a course-registration backend with two primary roles:
 - **ORM:** GORM
 - **Database:** MySQL
 - **Auth:** JWT with Role-Based Access Control (RBAC)
+
+## Requirements
+
+- **Go** 1.26.4 or later
+- **MySQL** database server
+
+### Go Dependencies
+
+| Package                     | Purpose                     |
+| --------------------------- | --------------------------- |
+| `gorm.io/gorm`              | ORM for database operations |
+| `gorm.io/driver/mysql`      | MySQL driver for GORM       |
+| `github.com/golang-jwt/jwt` | JWT authentication          |
+
+Install dependencies:
+
+```bash
+go mod tidy
+```
+
+## Running
+
+### Local Development
+
+Set the `PORT` environment variable and run:
+
+```bash
+PORT=8080 go run .
+```
+
+### Docker
+
+```bash
+docker build -t educore .
+docker run -p 8080:8080 -e PORT=8080 educore
+```
