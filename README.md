@@ -40,14 +40,14 @@ EduCore is a course-registration backend with two primary roles:
 
 - **Go** 1.26.4 or later
 - **MySQL** database server
+- **DATABASE_URL** environment variable (e.g. `root:password@tcp(127.0.0.1:3306)/educore`)
 
 ### Go Dependencies
 
-| Package                     | Purpose                     |
-| --------------------------- | --------------------------- |
-| `gorm.io/gorm`              | ORM for database operations |
-| `gorm.io/driver/mysql`      | MySQL driver for GORM       |
-| `github.com/golang-jwt/jwt` | JWT authentication          |
+| Package                 | Purpose                     |
+| ----------------------- | --------------------------- |
+| `gorm.io/gorm`          | ORM for database operations |
+| `gorm.io/driver/mysql`  | MySQL driver for GORM       |
 
 Install dependencies:
 
@@ -59,15 +59,19 @@ go mod tidy
 
 ### Local Development
 
-Set the `PORT` environment variable and run:
+Set the environment variables and run:
 
 ```bash
-PORT=8080 go run .
+export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore"
+export PORT=8080
+go run .
 ```
+
+The server starts on `http://localhost:8080`. On startup, GORM will automatically migrate all models (creating tables if they don't exist).
 
 ### Docker
 
 ```bash
 docker build -t educore .
-docker run -p 8080:8080 -e PORT=8080 educore
+docker run -p 8080:8080 -e DATABASE_URL="root:password@tcp(host:3306)/educore" educore
 ```
