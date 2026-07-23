@@ -2,6 +2,7 @@ package main
 
 import (
 	"educore/internal"
+	"educore/internal/student"
 	"log/slog"
 	"net/http"
 
@@ -28,7 +29,7 @@ func Setup(conf Config) (http.Handler, error) {
 
 	protected := chain.Append(NewJWTAuth(conf.JWTSecret).Middleware())
 
-	sh := StudentHandler{db: db}
+	sh := student.NewStudentHandler(db)
 	ah := AuthHandler{db: db, jwtSecret: conf.JWTSecret}
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
