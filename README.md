@@ -75,3 +75,17 @@ The server starts on `http://localhost:8080`. On startup, GORM will automaticall
 docker build -t educore .
 docker run -p 8080:8080 -e DATABASE_URL="root:password@tcp(host:3306)/educore" educore
 ```
+
+### Docker Compose
+
+Starts both MySQL and the app with everything wired up:
+
+```bash
+docker compose up --build
+```
+
+To stop and remove volumes:
+
+```bash
+docker compose down -v
+```
