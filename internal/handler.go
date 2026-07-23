@@ -19,4 +19,6 @@ func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		WriteServerError(w, nil)
 		return
 	}
+
+	WriteError(w, err.StatusCode, err.Message, nil)
 }

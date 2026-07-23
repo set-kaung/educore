@@ -20,7 +20,16 @@ func main() {
 		)
 		return
 	}
-	conf := Config{DSN: dsn}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		slog.Error("failed to start server",
+			"reason", "JWT_SECRET environment variable is empty",
+		)
+		return
+	}
+
+	conf := Config{DSN: dsn, JWTSecret: jwtSecret}
 
 	mux, err := Setup(conf)
 	if err != nil {

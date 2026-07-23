@@ -34,3 +34,7 @@ func WriteServerError(w http.ResponseWriter, headers http.Header) error {
 func WriteData(w http.ResponseWriter, messsage string, data any, headers http.Header) error {
 	return writeResponse(w, http.StatusOK, messsage, data, headers)
 }
+
+func WriteError(w http.ResponseWriter, statusCode int, message string, headers http.Header) error {
+	return writeResponse(w, statusCode, message, nil, headers)
+}
