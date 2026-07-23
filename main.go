@@ -1,18 +1,13 @@
 package main
 
 import (
-	"educore/internal"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 func main() {
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -25,25 +20,14 @@ func main() {
 		)
 		return
 	}
+	conf := Config{DSN: dsn}
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	mux, err := Setup(conf)
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err)
+		slog.Error("failed to create server", "reason", err.Error())
 		return
 	}
 
-	if err := db.AutoMigrate(internal.Models...); err != nil {
-		slog.Error("failed to migrate database", "error", err)
-		return
-	}
-	slog.Info("database migration complete")
-
-	mux := http.NewServeMux()
-
-	mux.Handle("/health", internal.HandlerFunc(func(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
-		internal.WriteData(w, "success", "service is healthy", nil)
-		return nil
-	}))
 	slog.Info("starting HTTP server",
 		"port", port,
 	)
