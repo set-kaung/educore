@@ -20,6 +20,7 @@ services:
       PORT: "8080"
       DATABASE_URL: "root:root@tcp(db:3306)/educore"
       JWT_SECRET: "secret123"
+      AUTH_TYPE: "mock"
     depends_on:
       db:
         condition: service_healthy

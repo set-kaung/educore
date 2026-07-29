@@ -2,6 +2,7 @@ package main
 
 import (
 	"educore/internal"
+	"educore/internal/auth"
 	"educore/internal/student"
 	"log/slog"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 type Config struct {
 	DSN       string
 	JWTSecret string
+	AuthType  string
 }
 
 func Setup(conf Config) (http.Handler, error) {
@@ -29,8 +31,16 @@ func Setup(conf Config) (http.Handler, error) {
 
 	protected := chain.Append(NewJWTAuth(conf.JWTSecret).Middleware())
 
+	var authenticator auth.Authenticator
+	switch conf.AuthType {
+	case "ad":
+		authenticator = auth.NewADAuthenticator("", "", "")
+	default:
+		authenticator = auth.NewMockAuthenticator()
+	}
+
 	sh := student.NewStudentHandler(db)
-	ah := AuthHandler{db: db, jwtSecret: conf.JWTSecret}
+	ah := AuthHandler{authenticator: authenticator, jwtSecret: conf.JWTSecret}
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))

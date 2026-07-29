@@ -29,7 +29,7 @@ func main() {
 		return
 	}
 
-	conf := Config{DSN: dsn, JWTSecret: jwtSecret}
+	conf := Config{DSN: dsn, JWTSecret: jwtSecret, AuthType: os.Getenv("AUTH_TYPE")}
 
 	mux, err := Setup(conf)
 	if err != nil {

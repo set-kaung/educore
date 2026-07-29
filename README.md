@@ -41,6 +41,8 @@ EduCore is a course-registration backend with two primary roles:
 - **Go** 1.26.4 or later
 - **MySQL** database server
 - **DATABASE_URL** environment variable (e.g. `root:password@tcp(127.0.0.1:3306)/educore`)
+- **JWT_SECRET** environment variable
+- **AUTH_TYPE** environment variable (`mock` for testing, `ad` for Active Directory)
 
 ### Go Dependencies
 
@@ -63,6 +65,8 @@ Set the environment variables and run:
 
 ```bash
 export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore"
+export JWT_SECRET="secret123"
+export AUTH_TYPE="mock"
 export PORT=8080
 go run .
 ```

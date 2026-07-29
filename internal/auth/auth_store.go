@@ -1,48 +1,27 @@
 package auth
 
 import (
-	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
 
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-)
-
-func Login(db *gorm.DB, req LoginRequest, jwtSecret string) (LoginResponse, error) {
-	var student struct {
-		ID       uint
-		Password string
-	}
-
-	err := db.Table("students").
-		Select("id", "password").
-		Where("username = ?", req.Username).
-		Take(&student).Error
+func Login(authenticator Authenticator, req LoginRequest, jwtSecret string) (LoginResult, error) {
+	result, err := authenticator.Authenticate(req.Username, req.Password)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return LoginResponse{}, ErrInvalidCredentials
-		}
-		return LoginResponse{}, err
-	}
-
-	if student.Password != req.Password {
-		return LoginResponse{}, ErrInvalidCredentials
+		return LoginResult{}, err
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": student.ID,
-		"role":    "student",
+		"user_id": result.UserID,
+		"role":    result.Role,
 		"exp":     time.Now().Add(24 * time.Hour).Unix(),
 	})
 
 	signed, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return LoginResponse{}, err
+		return LoginResult{}, err
 	}
 
-	return LoginResponse{Token: signed}, nil
+	return LoginResult{Token: signed}, nil
 }

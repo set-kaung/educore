@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
-	db        *gorm.DB
-	jwtSecret string
+	authenticator auth.Authenticator
+	jwtSecret     string
 }
 
 func (ah AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
@@ -21,7 +19,7 @@ func (ah AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) *inter
 		return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid request body", Err: err}
 	}
 
-	res, err := auth.Login(ah.db, req, ah.jwtSecret)
+	res, err := auth.Login(ah.authenticator, req, ah.jwtSecret)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			return &internal.HTTPError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials", Err: err}
