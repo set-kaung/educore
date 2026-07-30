@@ -7,6 +7,16 @@ import (
 	"os"
 )
 
+//	@title			EduCore API
+//	@version		1.0
+//	@description	Course-registration backend for CSX 4110.
+
+//	@host		localhost:8080
+//	@schemes	http
+
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {

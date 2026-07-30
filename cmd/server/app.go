@@ -3,6 +3,7 @@ package main
 import (
 	"educore/internal"
 	"educore/internal/auth"
+	"educore/internal/auth/authenticators"
 	"educore/internal/student"
 	"educore/internal/textbook"
 	"log/slog"
@@ -13,10 +14,10 @@ import (
 )
 
 type Config struct {
-	DSN            string
-	JWTSecret      string
-	AuthType       string
-	OLUserAgent    string
+	DSN         string
+	JWTSecret   string
+	AuthType    string
+	OLUserAgent string
 }
 
 func Setup(conf Config) (http.Handler, error) {
@@ -31,18 +32,18 @@ func Setup(conf Config) (http.Handler, error) {
 
 	mux.Handle("GET /health", chain.Chain(http.HandlerFunc(HealthCheck)))
 
-	protected := chain.Append(NewJWTAuth(conf.JWTSecret).Middleware())
+	protected := chain.Append(auth.NewJWTAuth(conf.JWTSecret).Middleware())
 
 	var authenticator auth.Authenticator
 	switch conf.AuthType {
 	case "ad":
-		authenticator = auth.NewADAuthenticator("", "", "")
+		authenticator = authenticators.NewADAuthenticator("", "", "")
 	default:
-		authenticator = auth.NewMockAuthenticator()
+		authenticator = authenticators.NewMockAuthenticator()
 	}
 
 	sh := student.NewStudentHandler(db)
-	ah := AuthHandler{authenticator: authenticator, jwtSecret: conf.JWTSecret}
+	ah := auth.AuthHandler{Authenticator: authenticator, JWTSecret: conf.JWTSecret}
 	th := textbook.NewTextbookHandler(conf.OLUserAgent)
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
@@ -52,6 +53,10 @@ func Setup(conf Config) (http.Handler, error) {
 	return mux, nil
 }
 
+// HealthCheck godoc
+// @Summary      Health check
+// @Success      200  {object}  internal.ResponseBody
+// @Router       /health [get]
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	internal.WriteData(w, "success", "service is healthy", nil)
 }

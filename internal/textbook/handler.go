@@ -14,6 +14,15 @@ func NewTextbookHandler(userAgent string) *TextbookHandler {
 	return &TextbookHandler{lib: openlibrary.NewClient(userAgent)}
 }
 
+// HandleSearch godoc
+// @Summary      Search textbooks
+// @Description  Search for textbooks via OpenLibrary API
+// @Tags         textbooks
+// @Produce      json
+// @Param        q   query  string  true  "Search query"
+// @Success      200  {object}  internal.ResponseBody{data=openlibrary.SearchResult}
+// @Failure      400  {object}  internal.ResponseBody
+// @Router       /textbooks [get]
 func (h *TextbookHandler) HandleSearch(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	query := r.URL.Query().Get("q")
 	if query == "" {

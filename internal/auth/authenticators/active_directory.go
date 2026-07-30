@@ -1,6 +1,9 @@
-package auth
+package authenticators
 
-import "log/slog"
+import (
+	"educore/internal/auth"
+	"log/slog"
+)
 
 type ADAuthenticator struct {
 	ClientID     string
@@ -17,6 +20,6 @@ func NewADAuthenticator(clientID, clientSecret, tenantID string) *ADAuthenticato
 	}
 }
 
-func (a *ADAuthenticator) Authenticate(username, password string) (AuthResult, error) {
-	return AuthResult{}, ErrAuthUnavailable
+func (a *ADAuthenticator) Authenticate(username, password string) (auth.AuthResult, error) {
+	return auth.AuthResult{}, auth.ErrAuthUnavailable
 }
