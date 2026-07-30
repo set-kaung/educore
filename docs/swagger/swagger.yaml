@@ -87,6 +87,45 @@ definitions:
       semester:
         type: string
     type: object
+  internal_semestercourse.CreateRequest:
+    properties:
+      course_id:
+        type: integer
+      schedules:
+        items:
+          $ref: '#/definitions/internal_semestercourse.Schedule'
+        type: array
+      section:
+        type: string
+      semester:
+        type: string
+      taught_by:
+        type: integer
+    type: object
+  internal_semestercourse.CreateResponse:
+    properties:
+      course_id:
+        type: integer
+      schedules:
+        items:
+          $ref: '#/definitions/internal_semestercourse.Schedule'
+        type: array
+      section:
+        type: string
+      semester:
+        type: string
+      semester_course_id:
+        type: integer
+      taught_by:
+        type: integer
+    type: object
+  internal_semestercourse.Schedule:
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+    type: object
   internal_student.StudentData:
     properties:
       departmentName:
@@ -206,6 +245,44 @@ paths:
       summary: Log in
       tags:
       - auth
+  /semester-courses:
+    post:
+      consumes:
+      - application/json
+      description: Schedule a course for a semester with sections and timeslots. Checks
+        professor conflicts.
+      parameters:
+      - description: Semester course details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_semestercourse.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_semestercourse.CreateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Create semester course schedule
+      tags:
+      - semester-courses
   /student:
     get:
       description: Get all students with department names

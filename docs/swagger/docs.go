@@ -190,6 +190,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/semester-courses": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Schedule a course for a semester with sections and timeslots. Checks professor conflicts.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "Create semester course schedule",
+                "parameters": [
+                    {
+                        "description": "Semester course details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_semestercourse.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_semestercourse.CreateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
         "/student": {
             "get": {
                 "security": [
@@ -410,6 +473,66 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "semester": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_semestercourse.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "course_id": {
+                    "type": "integer"
+                },
+                "schedules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_semestercourse.Schedule"
+                    }
+                },
+                "section": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "string"
+                },
+                "taught_by": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_semestercourse.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "course_id": {
+                    "type": "integer"
+                },
+                "schedules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_semestercourse.Schedule"
+                    }
+                },
+                "section": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "string"
+                },
+                "semester_course_id": {
+                    "type": "integer"
+                },
+                "taught_by": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_semestercourse.Schedule": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
                     "type": "string"
                 }
             }
