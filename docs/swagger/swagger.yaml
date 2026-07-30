@@ -74,13 +74,13 @@ definitions:
       token:
         type: string
     type: object
-  internal_course.CourseOffering:
+  internal_semestercourse.CourseOffering:
     properties:
-      courseCode:
+      course_code:
         type: string
       name:
         type: string
-      professorName:
+      professor_name:
         type: string
       section:
         type: string
@@ -143,37 +143,6 @@ info:
   version: "1.0"
 paths:
   /courses:
-    get:
-      description: Get all course offerings for a given semester
-      parameters:
-      - description: Semester (e.g. Fall2026)
-        in: query
-        name: semester
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/internal.ResponseBody'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/internal_course.CourseOffering'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal.ResponseBody'
-      security:
-      - BearerAuth: []
-      summary: List course offerings by semester
-      tags:
-      - courses
     post:
       consumes:
       - application/json
@@ -246,6 +215,37 @@ paths:
       tags:
       - auth
   /semester-courses:
+    get:
+      description: Get all course offerings for a given semester
+      parameters:
+      - description: Semester (e.g. Fall2026)
+        in: query
+        name: semester
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_semestercourse.CourseOffering'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: List semester course offerings
+      tags:
+      - semester-courses
     post:
       consumes:
       - application/json

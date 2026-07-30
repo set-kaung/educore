@@ -16,59 +16,6 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/courses": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all course offerings for a given semester",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "courses"
-                ],
-                "summary": "List course offerings by semester",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Semester (e.g. Fall2026)",
-                        "name": "semester",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/internal.ResponseBody"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_course.CourseOffering"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal.ResponseBody"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -191,6 +138,59 @@ const docTemplate = `{
             }
         },
         "/semester-courses": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all course offerings for a given semester",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "List semester course offerings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Semester (e.g. Fall2026)",
+                        "name": "semester",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_semestercourse.CourseOffering"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -457,16 +457,16 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_course.CourseOffering": {
+        "internal_semestercourse.CourseOffering": {
             "type": "object",
             "properties": {
-                "courseCode": {
+                "course_code": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "professorName": {
+                "professor_name": {
                     "type": "string"
                 },
                 "section": {
