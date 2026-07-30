@@ -50,7 +50,6 @@ type Student struct {
 	gorm.Model
 	Username     string     `gorm:"column:username;not null"`
 	StudentID    string     `gorm:"column:student_id;not null"`
-	Password     string     `gorm:"column:password;not null"`
 	DepartmentID uint       `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
 	Department   Department
 }
