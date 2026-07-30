@@ -49,12 +49,13 @@ func Setup(conf Config) (http.Handler, error) {
 	ah := auth.AuthHandler{Authenticator: authenticator, JWTSecret: conf.JWTSecret}
 	th := textbook.NewTextbookHandler(conf.OLUserAgent)
 	ch := course.NewCourseHandler(db)
+
 	sch := semestercourse.NewHandler(db)
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))
 	mux.Handle("GET /textbooks", chain.Chain(internal.HandlerFunc(th.HandleSearch)))
-	mux.Handle("GET /courses", protected.Chain(internal.HandlerFunc(ch.HandleGetBySemester)))
+	mux.Handle("GET /semester-courses", protected.Chain(internal.HandlerFunc(sch.HandleGetBySemester)))
 	mux.Handle("POST /courses", professorOnly.Chain(internal.HandlerFunc(ch.HandleCreateCourse)))
 	mux.Handle("POST /semester-courses", professorOnly.Chain(internal.HandlerFunc(sch.HandleCreate)))
 
