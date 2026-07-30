@@ -1,0 +1,164 @@
+definitions:
+  educore_internal_openlibrary.BookDoc:
+    properties:
+      author_name:
+        items:
+          type: string
+        type: array
+      cover_i:
+        type: integer
+      first_publish_year:
+        type: integer
+      isbn:
+        items:
+          type: string
+        type: array
+      key:
+        type: string
+      title:
+        type: string
+    type: object
+  educore_internal_openlibrary.SearchResult:
+    properties:
+      docs:
+        items:
+          $ref: '#/definitions/educore_internal_openlibrary.BookDoc'
+        type: array
+      numFound:
+        type: integer
+    type: object
+  internal.ResponseBody:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  internal_auth.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_auth.LoginResult:
+    properties:
+      token:
+        type: string
+    type: object
+  internal_student.StudentData:
+    properties:
+      departmentName:
+        type: string
+      studentID:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Course-registration backend for CSX 4110.
+  title: EduCore API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Health check
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with username and password, returns JWT
+      parameters:
+      - description: Credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.LoginResult'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Log in
+      tags:
+      - auth
+  /student:
+    get:
+      description: Get all students with department names
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_student.StudentData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List students
+      tags:
+      - students
+  /textbooks:
+    get:
+      description: Search for textbooks via OpenLibrary API
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/educore_internal_openlibrary.SearchResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Search textbooks
+      tags:
+      - textbooks
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
