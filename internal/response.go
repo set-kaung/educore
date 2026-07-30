@@ -31,8 +31,8 @@ func WriteServerError(w http.ResponseWriter, headers http.Header) error {
 	return writeResponse(w, http.StatusInternalServerError, "", nil, headers)
 }
 
-func WriteData(w http.ResponseWriter, messsage string, data any, headers http.Header) error {
-	return writeResponse(w, http.StatusOK, messsage, data, headers)
+func WriteData(w http.ResponseWriter, message string, data any, headers http.Header) error {
+	return writeResponse(w, http.StatusOK, message, data, headers)
 }
 
 func WriteError(w http.ResponseWriter, statusCode int, message string, headers http.Header) error {

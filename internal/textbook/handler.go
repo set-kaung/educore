@@ -34,6 +34,6 @@ func (h *TextbookHandler) HandleSearch(w http.ResponseWriter, r *http.Request) *
 		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "failed to search textbooks", Err: err}
 	}
 
-	internal.WriteData(w, "success", result, nil)
+	internal.WriteData(w, "", result, nil)
 	return nil
 }

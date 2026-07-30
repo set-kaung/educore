@@ -36,6 +36,6 @@ func (ah AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) *inter
 		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "login failed", Err: err}
 	}
 
-	internal.WriteData(w, "login successful", res, nil)
+	internal.WriteData(w, "", res, nil)
 	return nil
 }

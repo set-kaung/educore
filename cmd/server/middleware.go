@@ -1,6 +1,8 @@
 package main
 
 import (
+	"educore/internal"
+	"educore/internal/auth"
 	"log/slog"
 	"net/http"
 )
@@ -26,6 +28,21 @@ func (r *RouteChainer) Append(appendingRoutes ...func(http.Handler) http.Handler
 	newRoutes = append(newRoutes, r.routes...)
 	newRoutes = append(newRoutes, appendingRoutes...)
 	return &RouteChainer{routes: newRoutes}
+}
+
+func RoleRequired(allowed ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims := auth.GetClaims(r)
+			for _, role := range allowed {
+				if claims.Role == role {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			internal.WriteError(w, http.StatusForbidden, "forbidden", nil)
+		})
+	}
 }
 
 func RequestLogMiddleWare(next http.Handler) http.Handler {

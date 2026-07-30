@@ -27,6 +27,31 @@ definitions:
       numFound:
         type: integer
     type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  internal.Course:
+    properties:
+      courseCode:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      section:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   internal.ResponseBody:
     properties:
       data: {}
@@ -49,6 +74,19 @@ definitions:
       token:
         type: string
     type: object
+  internal_course.CourseOffering:
+    properties:
+      courseCode:
+        type: string
+      name:
+        type: string
+      professorName:
+        type: string
+      section:
+        type: string
+      semester:
+        type: string
+    type: object
   internal_student.StudentData:
     properties:
       departmentName:
@@ -65,6 +103,70 @@ info:
   title: EduCore API
   version: "1.0"
 paths:
+  /courses:
+    get:
+      description: Get all course offerings for a given semester
+      parameters:
+      - description: Semester (e.g. Fall2026)
+        in: query
+        name: semester
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_course.CourseOffering'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: List course offerings by semester
+      tags:
+      - courses
+    post:
+      consumes:
+      - application/json
+      description: Add a new course listing. Professor only.
+      parameters:
+      - description: Course details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal.Course'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal.Course'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Create a new course
+      tags:
+      - courses
   /health:
     get:
       responses:

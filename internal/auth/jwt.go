@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"educore/internal"
 	"net/http"
 	"strings"
 
@@ -33,7 +34,7 @@ func (j *JWTAuth) validate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if header == "" || !strings.HasPrefix(header, "Bearer ") {
-			http.Error(w, `{"status_code":401,"status":"Unauthorized","message":"missing or invalid authorization header"}`, http.StatusUnauthorized)
+			internal.WriteError(w, http.StatusUnauthorized, "missing or invalid authorization header", nil)
 			return
 		}
 
@@ -43,13 +44,13 @@ func (j *JWTAuth) validate(next http.Handler) http.Handler {
 			return []byte(j.secret), nil
 		})
 		if err != nil || !token.Valid {
-			http.Error(w, `{"status_code":401,"status":"Unauthorized","message":"invalid or expired token"}`, http.StatusUnauthorized)
+			internal.WriteError(w, http.StatusUnauthorized, "invalid or expired token", nil)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			http.Error(w, `{"status_code":401,"status":"Unauthorized","message":"invalid token claims"}`, http.StatusUnauthorized)
+			internal.WriteError(w, http.StatusUnauthorized, "invalid token claims", nil)
 			return
 		}
 
