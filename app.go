@@ -61,6 +61,7 @@ func ConnectAndMigrateDatabase(dsn string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if err := db.AutoMigrate(internal.Models...); err != nil {
 		return nil, err
 	}

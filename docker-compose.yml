@@ -7,13 +7,15 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      test: ["CMD", "mysql", "-h", "localhost", "-proot", "-e", "SELECT 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   app:
     build: .
+    restart: on-failure
     ports:
       - "127.0.0.1:8080:8080"
     environment:
