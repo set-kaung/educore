@@ -29,7 +29,12 @@ func main() {
 		return
 	}
 
-	conf := Config{DSN: dsn, JWTSecret: jwtSecret, AuthType: os.Getenv("AUTH_TYPE")}
+	conf := Config{
+		DSN:         dsn,
+		JWTSecret:   jwtSecret,
+		AuthType:    os.Getenv("AUTH_TYPE"),
+		OLUserAgent: os.Getenv("OPENLIBRARY_USER_AGENT"),
+	}
 
 	mux, err := Setup(conf)
 	if err != nil {

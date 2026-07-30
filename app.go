@@ -4,6 +4,7 @@ import (
 	"educore/internal"
 	"educore/internal/auth"
 	"educore/internal/student"
+	"educore/internal/textbook"
 	"log/slog"
 	"net/http"
 
@@ -12,9 +13,10 @@ import (
 )
 
 type Config struct {
-	DSN       string
-	JWTSecret string
-	AuthType  string
+	DSN            string
+	JWTSecret      string
+	AuthType       string
+	OLUserAgent    string
 }
 
 func Setup(conf Config) (http.Handler, error) {
@@ -41,9 +43,11 @@ func Setup(conf Config) (http.Handler, error) {
 
 	sh := student.NewStudentHandler(db)
 	ah := AuthHandler{authenticator: authenticator, jwtSecret: conf.JWTSecret}
+	th := textbook.NewTextbookHandler(conf.OLUserAgent)
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))
+	mux.Handle("GET /textbooks", chain.Chain(internal.HandlerFunc(th.HandleSearch)))
 
 	return mux, nil
 }
