@@ -23,8 +23,9 @@ type Enrollment struct {
 
 type Professor struct {
 	gorm.Model
-	Name         string     `gorm:"column:name;not null"`
-	DepartmentID uint       `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Name        string     `gorm:"column:name;not null"`
+	DepartmentID uint      `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	ADObjectID   string    `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
 	Department   Department
 }
 
@@ -51,6 +52,7 @@ type Student struct {
 	Username     string     `gorm:"column:username;not null"`
 	StudentID    string     `gorm:"column:student_id;not null"`
 	DepartmentID uint       `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	ADObjectID   string     `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
 	Department   Department
 }
 
