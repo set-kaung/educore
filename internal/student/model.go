@@ -1,7 +1,7 @@
 package student
 
 type StudentData struct {
-	Username       string `gorm:"column:username"`
-	StudentID      string `gorm:"column:student_id"`
-	DepartmentName string `gorm:"column:department_name"`
+	Username       string `json:"username"`
+	StudentID      string `json:"student_id"`
+	DepartmentName string `json:"department_name"`
 }
