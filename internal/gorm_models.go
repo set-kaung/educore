@@ -9,8 +9,7 @@ import (
 type Course struct {
 	gorm.Model
 	Name       string `gorm:"column:name;not null"`
-	Section    string `gorm:"column:section;not null"`
-	CourseCode string `gorm:"column:course_code;not null"`
+	CourseCode string `gorm:"column:course_code;not null,uniqueIndex"`
 }
 
 type Enrollment struct {
@@ -23,9 +22,9 @@ type Enrollment struct {
 
 type Professor struct {
 	gorm.Model
-	Name        string     `gorm:"column:name;not null"`
-	DepartmentID uint      `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	ADObjectID   string    `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
+	Name         string `gorm:"column:name;not null"`
+	DepartmentID uint   `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	ADObjectID   string `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
 	Department   Department
 }
 
@@ -39,20 +38,20 @@ type SemesterCourseSchedule struct {
 
 type SemesterCourse struct {
 	gorm.Model
-	Semester           string     `gorm:"column:semester;not null"`
-	CourseID           uint       `gorm:"column:course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	Section            string     `gorm:"column:section;not null"`
-	TeachBy            uint       `gorm:"column:taught_by;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	Course             Course
-	Professor          Professor `gorm:"foreignKey:TeachBy"`
+	Semester  string `gorm:"column:semester;not null"`
+	CourseID  uint   `gorm:"column:course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Section   string `gorm:"column:section;not null"`
+	TeachBy   uint   `gorm:"column:taught_by;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Course    Course
+	Professor Professor `gorm:"foreignKey:TeachBy"`
 }
 
 type Student struct {
 	gorm.Model
-	Username     string     `gorm:"column:username;not null"`
-	StudentID    string     `gorm:"column:student_id;not null"`
-	DepartmentID uint       `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	ADObjectID   string     `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
+	Username     string `gorm:"column:username;not null"`
+	StudentID    string `gorm:"column:student_id;not null"`
+	DepartmentID uint   `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	ADObjectID   string `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
 	Department   Department
 }
 
