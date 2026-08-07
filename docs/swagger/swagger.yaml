@@ -27,31 +27,6 @@ definitions:
       numFound:
         type: integer
     type: object
-  gorm.DeletedAt:
-    properties:
-      time:
-        type: string
-      valid:
-        description: Valid is true if Time is not NULL
-        type: boolean
-    type: object
-  internal.Course:
-    properties:
-      courseCode:
-        type: string
-      createdAt:
-        type: string
-      deletedAt:
-        $ref: '#/definitions/gorm.DeletedAt'
-      id:
-        type: integer
-      name:
-        type: string
-      section:
-        type: string
-      updatedAt:
-        type: string
-    type: object
   internal.ResponseBody:
     properties:
       data: {}
@@ -72,6 +47,22 @@ definitions:
   internal_auth.LoginResult:
     properties:
       token:
+        type: string
+    type: object
+  internal_course.CourseRequest:
+    properties:
+      course_code:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_course.CourseResponse:
+    properties:
+      course_code:
+        type: string
+      id:
+        type: integer
+      name:
         type: string
     type: object
   internal_semestercourse.CourseOffering:
@@ -128,9 +119,9 @@ definitions:
     type: object
   internal_student.StudentData:
     properties:
-      departmentName:
+      department_name:
         type: string
-      studentID:
+      student_id:
         type: string
       username:
         type: string
@@ -153,7 +144,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal.Course'
+          $ref: '#/definitions/internal_course.CourseRequest'
       produces:
       - application/json
       responses:
@@ -164,7 +155,7 @@ paths:
             - $ref: '#/definitions/internal.ResponseBody'
             - properties:
                 data:
-                  $ref: '#/definitions/internal.Course'
+                  $ref: '#/definitions/internal_course.CourseResponse'
               type: object
         "400":
           description: Bad Request

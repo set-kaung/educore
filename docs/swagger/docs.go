@@ -40,7 +40,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal.Course"
+                            "$ref": "#/definitions/internal_course.CourseRequest"
                         }
                     }
                 ],
@@ -56,7 +56,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal.Course"
+                                            "$ref": "#/definitions/internal_course.CourseResponse"
                                         }
                                     }
                                 }
@@ -385,44 +385,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gorm.DeletedAt": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if Time is not NULL",
-                    "type": "boolean"
-                }
-            }
-        },
-        "internal.Course": {
-            "type": "object",
-            "properties": {
-                "courseCode": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "section": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
         "internal.ResponseBody": {
             "type": "object",
             "properties": {
@@ -453,6 +415,31 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_course.CourseRequest": {
+            "type": "object",
+            "properties": {
+                "course_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_course.CourseResponse": {
+            "type": "object",
+            "properties": {
+                "course_code": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -540,10 +527,10 @@ const docTemplate = `{
         "internal_student.StudentData": {
             "type": "object",
             "properties": {
-                "departmentName": {
+                "department_name": {
                     "type": "string"
                 },
-                "studentID": {
+                "student_id": {
                     "type": "string"
                 },
                 "username": {
