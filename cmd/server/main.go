@@ -17,6 +17,10 @@ import (
 // @securityDefinitions.apikey	BearerAuth
 // @in							header
 // @name						Authorization
+
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						x-api-key
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {

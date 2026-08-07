@@ -62,6 +62,14 @@ type Token struct {
 	ExpiresAt time.Time `gorm:"column:expires_at;not null"`
 }
 
+type ApiKey struct {
+	gorm.Model
+	Name  string `gorm:"column:name;type:varchar(255);not null"`
+	Email string `gorm:"column:email;type:varchar(255);not null"`
+	Key   string `gorm:"column:key;type:varchar(255);not null;uniqueIndex"`
+	Valid bool   `gorm:"column:valid;not null;default:true"`
+}
+
 type Department struct {
 	gorm.Model
 	Name string `gorm:"column:name;type:varchar(255);not null;uniqueIndex"`
@@ -82,6 +90,7 @@ var Models = []interface{}{
 	&SemesterCourse{},
 	&Student{},
 	&Token{},
+	&ApiKey{},
 	&Department{},
 	&SupportTicket{},
 }

@@ -65,6 +65,31 @@ definitions:
       name:
         type: string
     type: object
+  internal_publicapi.GrantKeyRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_publicapi.GrantKeyResponse:
+    properties:
+      email:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+    type: object
+  internal_publicapi.VerifyDepartmentResponse:
+    properties:
+      department:
+        type: string
+      enrolled:
+        type: boolean
+      student_id:
+        type: string
+    type: object
   internal_semestercourse.CourseOffering:
     properties:
       course_code:
@@ -133,6 +158,65 @@ info:
   title: EduCore API
   version: "1.0"
 paths:
+  /admin/api-keys:
+    post:
+      consumes:
+      - application/json
+      description: 'Admin only: generate and issue a new API key for peer service
+        integration.'
+      parameters:
+      - description: Partner details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_publicapi.GrantKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_publicapi.GrantKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Grant a new API key
+      tags:
+      - admin
+  /admin/api-keys/{key}:
+    delete:
+      description: 'Admin only: revoke an existing API key by its key string.'
+      parameters:
+      - description: API key to revoke
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Revoke an API key
+      tags:
+      - admin
   /courses:
     post:
       consumes:
@@ -205,6 +289,42 @@ paths:
       summary: Log in
       tags:
       - auth
+  /public/students/{student_id}/departments/{department_name}:
+    get:
+      description: 'Peer API: verify whether a student belongs to a specific department.
+        Requires x-api-key header.'
+      parameters:
+      - description: Student ID
+        in: path
+        name: student_id
+        required: true
+        type: string
+      - description: Department name
+        in: path
+        name: department_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_publicapi.VerifyDepartmentResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - ApiKeyAuth: []
+      summary: Verify student department enrollment
+      tags:
+      - public-api
   /semester-courses:
     get:
       description: Get all course offerings for a given semester
@@ -327,6 +447,10 @@ paths:
 schemes:
 - http
 securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: x-api-key
+    type: apiKey
   BearerAuth:
     in: header
     name: Authorization

@@ -5,6 +5,7 @@ import (
 	"educore/internal/auth"
 	"educore/internal/auth/authenticators"
 	"educore/internal/course"
+	"educore/internal/publicapi"
 	"educore/internal/semestercourse"
 	"educore/internal/student"
 	"educore/internal/textbook"
@@ -36,6 +37,8 @@ func Setup(conf Config) (http.Handler, error) {
 
 	protected := chain.Append(auth.NewJWTAuth(conf.JWTSecret).Middleware())
 	professorOnly := protected.Append(RoleRequired("professor", "admin"))
+	adminOnly := protected.Append(RoleRequired("admin"))
+	apiKeyOnly := chain.Append(publicapi.APIKeyMiddleware(db))
 
 	var authenticator auth.Authenticator
 	switch conf.AuthType {
@@ -51,6 +54,7 @@ func Setup(conf Config) (http.Handler, error) {
 	ch := course.NewCourseHandler(db)
 
 	sch := semestercourse.NewHandler(db)
+	ph := publicapi.NewHandler(db)
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))
@@ -58,6 +62,9 @@ func Setup(conf Config) (http.Handler, error) {
 	mux.Handle("GET /semester-courses", protected.Chain(internal.HandlerFunc(sch.HandleGetBySemester)))
 	mux.Handle("POST /courses", professorOnly.Chain(internal.HandlerFunc(ch.HandleCreateCourse)))
 	mux.Handle("POST /semester-courses", professorOnly.Chain(internal.HandlerFunc(sch.HandleCreate)))
+	mux.Handle("GET /public/students/{student_id}/departments/{department_name}", apiKeyOnly.Chain(internal.HandlerFunc(ph.HandleVerifyDepartmentEnrollment)))
+	mux.Handle("POST /admin/api-keys", adminOnly.Chain(internal.HandlerFunc(ph.HandleGrantKey)))
+	mux.Handle("DELETE /admin/api-keys/{key}", adminOnly.Chain(internal.HandlerFunc(ph.HandleRevokeKey)))
 
 	return mux, nil
 }

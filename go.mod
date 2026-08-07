@@ -4,6 +4,7 @@ go 1.26.4
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/uuid v1.6.0
 	github.com/swaggo/swag v1.16.6
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.2
