@@ -35,6 +35,7 @@ EduCore is a course-registration backend with two primary roles:
 - **ORM:** GORM
 - **Database:** MySQL
 - **Auth:** JWT with Role-Based Access Control (RBAC)
+- **UI:** Server-rendered `html/template` + htmx (monolith)
 
 ## Requirements
 
@@ -57,6 +58,50 @@ Install dependencies:
 go mod tidy
 ```
 
+## Web UI
+
+Server-rendered monolith: the same binary serves the JSON API and HTML pages. Templates and static assets are embedded via `go:embed` — no external files needed at runtime.
+
+### Pages
+
+| Route                   | Description                                        | Access          |
+| ----------------------- | -------------------------------------------------- | --------------- |
+| `GET /{$}`              | Redirects per role (`/my-courses` or `/students`)   | public          |
+| `GET /login`            | Login form                                         | guests only     |
+| `POST /session`         | Form login (sets `HttpOnly` session cookie)        | CSRF-protected  |
+| `POST /logout`          | Clears session, redirects to `/login`              | public          |
+| `GET /students`         | Student list with live search (htmx)               | professor/admin |
+| `GET /students/search`  | HTML fragment for htmx search                      | professor/admin |
+| `GET /my-courses`       | Courses the logged-in student is enrolled in       | logged in       |
+| `GET /static/`          | CSS + vendored `htmx.min.js`                       | public          |
+
+The JSON API routes (`POST /login`, `GET /student`, …) are unchanged. Browser sessions use the same JWT delivered in an `HttpOnly`, `SameSite=Lax` cookie; API clients keep using the `Authorization: Bearer` header.
+
+### Test Users (`AUTH_TYPE=mock`)
+
+| Username | Role      |
+| -------- | --------- |
+| `prof1`  | professor |
+| `stu1`   | student   |
+
+Passwords are ignored by the mock authenticator.
+
+### UI Project Layout
+
+```
+web/
+  templates/
+    layouts/        # base layout
+    partials/       # reusable fragments (htmx targets)
+    pages/          # one file per page
+  static/           # css + js, served at /static/
+
+internal/web/       # rendering, CSRF, cookies, flash, middleware
+internal/web/pages/ # page handlers
+```
+
+Page handlers call stores/services directly (no self-HTTP-calls). Forms are protected by signed double-submit CSRF tokens.
+
 ## Running
 
 ### Local Development
@@ -68,7 +113,7 @@ export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore"
 export JWT_SECRET="secret123"
 export AUTH_TYPE="mock"
 export PORT=8080
-go run .
+go run ./cmd/server
 ```
 
 The server starts on `http://localhost:8080`. On startup, GORM will automatically migrate all models (creating tables if they don't exist).
