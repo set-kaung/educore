@@ -78,6 +78,7 @@ func Setup(conf Config) (http.Handler, error) {
 
 	lh := pages.NewLoginHandler(authenticator, conf.JWTSecret, renderer)
 	sph := pages.NewStudentsHandler(db, renderer)
+	mch := pages.NewMyCoursesHandler(db, renderer)
 
 	mux.Handle("GET /{$}", guestUI.Chain(internal.HandlerFunc(lh.Home)))
 	mux.Handle("GET /static/", chain.Chain(http.StripPrefix("/static/", http.FileServerFS(staticRoot))))
@@ -86,6 +87,7 @@ func Setup(conf Config) (http.Handler, error) {
 	mux.Handle("POST /logout", chain.Chain(internal.HandlerFunc(lh.Logout)))
 	mux.Handle("GET /students", authedUI.Chain(renderer.H(sph.Show)))
 	mux.Handle("GET /students/search", authedUI.Chain(renderer.H(sph.Search)))
+	mux.Handle("GET /my-courses", authedUI.Chain(renderer.H(mch.Show)))
 
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))

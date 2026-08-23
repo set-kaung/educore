@@ -13,6 +13,11 @@
         <a class="brand" href="/">EduCore</a>
         <nav>
             {{if .Authenticated}}
+                {{if eq .Role "student"}}
+                    <a href="/my-courses">My Courses</a>
+                {{else if or (eq .Role "professor") (eq .Role "admin")}}
+                    <a href="/students">Students</a>
+                {{end}}
                 <span class="role-badge">{{.Role}}</span>
                 <form method="post" action="/logout" class="inline-form">
                     <input type="hidden" name="_csrf" value="{{.CSRFToken}}">

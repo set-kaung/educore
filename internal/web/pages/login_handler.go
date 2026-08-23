@@ -21,8 +21,12 @@ func NewLoginHandler(authenticator auth.Authenticator, jwtSecret string, rendere
 
 func (h *LoginHandler) Home(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	target := "/login"
-	if _, authenticated := auth.TryGetClaims(r); authenticated {
-		target = "/students"
+	if claims, authenticated := auth.TryGetClaims(r); authenticated {
+		if claims.Role == "student" {
+			target = "/my-courses"
+		} else {
+			target = "/students"
+		}
 	}
 	http.Redirect(w, r, target, http.StatusSeeOther)
 	return nil

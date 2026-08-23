@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="page-header">
+    <h1>My Courses</h1>
+    <span class="empty">{{len .Data}} enrolled</span>
+</div>
+<table class="table">
+    <thead>
+    <tr>
+        <th>Course</th>
+        <th>Code</th>
+        <th>Section</th>
+        <th>Semester</th>
+        <th>Professor</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .Data}}
+    <tr>
+        <td>{{.Name}}</td>
+        <td>{{.CourseCode}}</td>
+        <td>{{.Section}}</td>
+        <td>{{.Semester}}</td>
+        <td>{{.ProfessorName}}</td>
+    </tr>
+    {{else}}
+    <tr>
+        <td colspan="5" class="empty">You are not enrolled in any courses.</td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}

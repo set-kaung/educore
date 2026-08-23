@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"educore/internal"
+	"educore/internal/auth"
 	"educore/internal/student"
 	"educore/internal/web"
 
@@ -26,6 +27,11 @@ func NewStudentsHandler(db *gorm.DB, renderer *web.Renderer) *StudentsHandler {
 }
 
 func (h *StudentsHandler) Show(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	if claims, ok := auth.TryGetClaims(r); ok && claims.Role == "student" {
+		http.Redirect(w, r, "/my-courses", http.StatusSeeOther)
+		return nil
+	}
+
 	students, query, herr := h.list(r)
 	if herr != nil {
 		return herr
