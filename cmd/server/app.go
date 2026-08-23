@@ -9,6 +9,10 @@ import (
 	"educore/internal/semestercourse"
 	"educore/internal/student"
 	"educore/internal/textbook"
+	"educore/internal/web"
+	"educore/internal/web/pages"
+	assets "educore/web"
+	"io/fs"
 	"log/slog"
 	"net/http"
 
@@ -33,12 +37,28 @@ func Setup(conf Config) (http.Handler, error) {
 
 	chain := NewRouteChainer(RequestLogMiddleWare)
 
+	renderer, err := web.NewRenderer(assets.Files)
+	if err != nil {
+		return nil, err
+	}
+
+	staticRoot, err := fs.Sub(assets.Files, "static")
+	if err != nil {
+		return nil, err
+	}
+
 	mux.Handle("GET /health", chain.Chain(http.HandlerFunc(HealthCheck)))
 
-	protected := chain.Append(auth.NewJWTAuth(conf.JWTSecret).Middleware())
+	jwtAuth := auth.NewJWTAuth(conf.JWTSecret)
+	csrf := web.NewCSRF(conf.JWTSecret)
+
+	protected := chain.Append(jwtAuth.Middleware())
 	professorOnly := protected.Append(RoleRequired("professor", "admin"))
 	adminOnly := protected.Append(RoleRequired("admin"))
 	apiKeyOnly := chain.Append(publicapi.APIKeyMiddleware(db))
+
+	guestUI := chain.Append(csrf.Middleware).Append(jwtAuth.OptionalMiddleware())
+	authedUI := guestUI.Append(jwtAuth.PageMiddleware("/login"))
 
 	var authenticator auth.Authenticator
 	switch conf.AuthType {
@@ -56,6 +76,17 @@ func Setup(conf Config) (http.Handler, error) {
 	sch := semestercourse.NewHandler(db)
 	ph := publicapi.NewHandler(db)
 
+	lh := pages.NewLoginHandler(authenticator, conf.JWTSecret, renderer)
+	sph := pages.NewStudentsHandler(db, renderer)
+
+	mux.Handle("GET /{$}", guestUI.Chain(internal.HandlerFunc(lh.Home)))
+	mux.Handle("GET /static/", chain.Chain(http.StripPrefix("/static/", http.FileServerFS(staticRoot))))
+	mux.Handle("GET /login", guestUI.Append(web.RedirectIfAuthenticated("/students")).Chain(internal.HandlerFunc(lh.Show)))
+	mux.Handle("POST /session", guestUI.Chain(internal.HandlerFunc(lh.Submit)))
+	mux.Handle("POST /logout", chain.Chain(internal.HandlerFunc(lh.Logout)))
+	mux.Handle("GET /students", authedUI.Chain(renderer.H(sph.Show)))
+	mux.Handle("GET /students/search", authedUI.Chain(renderer.H(sph.Search)))
+
 	mux.Handle("POST /login", chain.Chain(internal.HandlerFunc(ah.HandleLogin)))
 	mux.Handle("GET /student", protected.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))
 	mux.Handle("GET /textbooks", chain.Chain(internal.HandlerFunc(th.HandleSearch)))
@@ -66,7 +97,13 @@ func Setup(conf Config) (http.Handler, error) {
 	mux.Handle("POST /admin/api-keys", adminOnly.Chain(internal.HandlerFunc(ph.HandleGrantKey)))
 	mux.Handle("DELETE /admin/api-keys/{key}", adminOnly.Chain(internal.HandlerFunc(ph.HandleRevokeKey)))
 
-	return mux, nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, pattern := mux.Handler(r); pattern == "" {
+			renderer.Error(w, http.StatusNotFound)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	}), nil
 }
 
 // HealthCheck godoc
