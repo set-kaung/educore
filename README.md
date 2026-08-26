@@ -35,13 +35,13 @@ EduCore is a course-registration backend with two primary roles:
 - **ORM:** GORM
 - **Database:** MySQL
 - **Auth:** JWT with Role-Based Access Control (RBAC)
-- **UI:** Server-rendered `html/template` + htmx (monolith)
+- **UI:** Static HTML + htmx, plain CSS — no frontend build step
 
 ## Requirements
 
 - **Go** 1.26.4 or later
 - **MySQL** database server
-- **DATABASE_URL** environment variable (e.g. `root:password@tcp(127.0.0.1:3306)/educore`)
+- **DATABASE_URL** environment variable (e.g. `root:password@tcp(127.0.0.1:3306)/educore?parseTime=true`)
 - **JWT_SECRET** environment variable
 - **AUTH_TYPE** environment variable (`mock` for testing, `ad` for Active Directory)
 
@@ -60,22 +60,38 @@ go mod tidy
 
 ## Web UI
 
-Server-rendered monolith: the same binary serves the JSON API and HTML pages. Templates and static assets are embedded via `go:embed` — no external files needed at runtime.
+The UI is a set of plain static HTML files served from `web/public/` — no Go templating and no frontend build step. Pages use htmx (with client-side mustache templates) and small ES modules to call the JSON API directly, keeping UI and business logic fully separated. Styles are hand-written plain CSS split into `base.css` (tokens + reset), `layout.css` (page shell), `components.css` (buttons, forms, tables, toasts) and a few width/spacing helpers in `helpers.css`.
 
 ### Pages
 
-| Route                   | Description                                        | Access          |
-| ----------------------- | -------------------------------------------------- | --------------- |
-| `GET /{$}`              | Redirects per role (`/my-courses` or `/students`)   | public          |
-| `GET /login`            | Login form                                         | guests only     |
-| `POST /session`         | Form login (sets `HttpOnly` session cookie)        | CSRF-protected  |
-| `POST /logout`          | Clears session, redirects to `/login`              | public          |
-| `GET /students`         | Student list with live search (htmx)               | professor/admin |
-| `GET /students/search`  | HTML fragment for htmx search                      | professor/admin |
-| `GET /my-courses`       | Courses the logged-in student is enrolled in       | logged in       |
-| `GET /static/`          | CSS + vendored `htmx.min.js`                       | public          |
+| Route                  | Description                                          | Access          |
+| ---------------------- | ---------------------------------------------------- | --------------- |
+| `GET /{$}`             | Redirects per role (`/my-courses`, `/students`, `/login`) | public     |
+| `GET /login`           | Login form                                           | guests only     |
+| `GET /students`        | Student list with live search                        | professor/admin |
+| `GET /my-courses`      | Courses the logged-in student is enrolled in         | logged in       |
+| `GET /course-offerings`| Offerings filtered by semester                       | logged in       |
+| `GET /add-course`      | Create course listings                               | professor/admin |
+| `GET /add-offering`    | Schedule a course offering                           | professor/admin |
+| `GET /css/`, `GET /js/` | Stylesheets, vendored JS and page modules            | public          |
 
-The JSON API routes (`POST /login`, `GET /student`, …) are unchanged. Browser sessions use the same JWT delivered in an `HttpOnly`, `SameSite=Lax` cookie; API clients keep using the `Authorization: Bearer` header.
+### API endpoints used by the UI
+
+| Endpoint                        | Purpose                                  | Access          |
+| ------------------------------- | ---------------------------------------- | --------------- |
+| `POST /api/login`               | JSON login, sets `HttpOnly` session cookie | public + same-origin |
+| `POST /api/logout`              | Clears the session cookie                | public + same-origin |
+| `GET /api/session`              | Current user id + role                   | logged in       |
+| `GET /api/students?q=`          | Student list with filter                 | professor/admin |
+| `GET /api/my/courses`           | Enrolled courses for current student     | logged in       |
+| `GET /api/semesters`            | Distinct semesters                       | logged in       |
+| `GET /api/semester-courses?semester=` | Offerings per semester             | logged in       |
+| `POST /api/semester-courses`    | Create offering (checks conflicts)       | professor/admin |
+| `GET /api/courses`              | Course listings                          | logged in       |
+| `POST /api/courses`             | Create course listing                    | professor/admin |
+| `GET /api/professors`           | Professor directory                      | logged in       |
+
+State-changing `/api/*` requests are protected by a same-origin check (`Origin` / `Sec-Fetch-Site`). Browser sessions use the JWT delivered in an `HttpOnly`, `SameSite=Lax` cookie; API clients keep using the `Authorization: Bearer` header.
 
 ### Test Users (`AUTH_TYPE=mock`)
 
@@ -90,17 +106,19 @@ Passwords are ignored by the mock authenticator.
 
 ```
 web/
-  templates/
-    layouts/        # base layout
-    partials/       # reusable fragments (htmx targets)
-    pages/          # one file per page
-  static/           # css + js, served at /static/
+  public/              # served from disk at runtime
+    index.html         # role-based redirect
+    login.html, students.html, my-courses.html,
+    course-offerings.html, add-course.html, add-offering.html, 404.html
+    css/base.css       # design tokens, reset, element defaults
+    css/layout.css     # topbar, nav, page shell
+    css/components.css # cards, buttons, forms, tables, toasts
+    css/helpers.css    # small width/spacing/text helpers
+    js/app.js          # session/nav/toast glue between pages and API
+    js/vendor/         # htmx, client-side-templates ext, mustache
 
-internal/web/       # rendering, CSRF, cookies, flash, middleware
-internal/web/pages/ # page handlers
+internal/web/          # disk-backed static file server + same-origin guard
 ```
-
-Page handlers call stores/services directly (no self-HTTP-calls). Forms are protected by signed double-submit CSRF tokens.
 
 ## Running
 
@@ -109,7 +127,7 @@ Page handlers call stores/services directly (no self-HTTP-calls). Forms are prot
 Set the environment variables and run:
 
 ```bash
-export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore"
+export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore?parseTime=true"
 export JWT_SECRET="secret123"
 export AUTH_TYPE="mock"
 export PORT=8080
@@ -122,7 +140,13 @@ The server starts on `http://localhost:8080`. On startup, GORM will automaticall
 
 ```bash
 docker build -t educore .
-docker run -p 8080:8080 -e DATABASE_URL="root:password@tcp(host:3306)/educore" educore
+docker run -p 8080:8080 -e DATABASE_URL="root:password@tcp(host:3306)/educore?parseTime=true" educore
+```
+MySQL Only
+```bash
+docker run -d --name educore-mysql -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=educore \
+  -v educore_mysql:/var/lib/mysql mysql:8.0
 ```
 
 ### Docker Compose

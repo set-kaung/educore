@@ -1,2 +1,5 @@
 .env
 educore
+node_modules/
+server
+.DS_Store

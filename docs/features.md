@@ -18,7 +18,7 @@ Search for syllabus textbooks via the OpenLibrary API.
 
 ## 5 Web Dashboard
 
-Server-rendered UI (`html/template` + htmx) in the same binary as the API: login page, logout, CSRF-protected forms, embedded templates/assets via `go:embed`. Role-based landing pages:
+Static HTML + htmx frontend served from disk (no Go templating, no embedding, no frontend build step). Pages call the JSON API directly; hand-written plain CSS. Role-based landing pages:
 
 - **Students** see `My Courses` — their enrolled courses (`enrollments` joined with semester courses)
 - **Professors/Admins** get the student list with live search

@@ -27,6 +27,29 @@ definitions:
       numFound:
         type: integer
     type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  internal.Course:
+    properties:
+      courseCode:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   internal.ResponseBody:
     properties:
       data: {}
@@ -35,6 +58,13 @@ definitions:
       status:
         type: string
       status_code:
+        type: integer
+    type: object
+  internal_auth.Claims:
+    properties:
+      role:
+        type: string
+      user_id:
         type: integer
     type: object
   internal_auth.LoginRequest:
@@ -46,6 +76,8 @@ definitions:
     type: object
   internal_auth.LoginResult:
     properties:
+      role:
+        type: string
       token:
         type: string
     type: object
@@ -60,6 +92,13 @@ definitions:
     properties:
       course_code:
         type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal_professor.ProfessorData:
+    properties:
       id:
         type: integer
       name:
@@ -137,9 +176,11 @@ definitions:
     type: object
   internal_semestercourse.Schedule:
     properties:
-      from:
+      end_time:
         type: string
-      to:
+      start_time:
+        type: string
+      weekday:
         type: string
     type: object
   internal_student.StudentData:
@@ -217,7 +258,28 @@ paths:
       summary: Revoke an API key
       tags:
       - admin
-  /courses:
+  /api/courses:
+    get:
+      description: Get all course listings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal.Course'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List courses
+      tags:
+      - courses
     post:
       consumes:
       - application/json
@@ -250,19 +312,12 @@ paths:
       summary: Create a new course
       tags:
       - courses
-  /health:
-    get:
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal.ResponseBody'
-      summary: Health check
-  /login:
+  /api/login:
     post:
       consumes:
       - application/json
-      description: Authenticate with username and password, returns JWT
+      description: Authenticate with username and password, sets the session cookie
+        and returns a JWT
       parameters:
       - description: Credentials
         in: body
@@ -289,21 +344,22 @@ paths:
       summary: Log in
       tags:
       - auth
-  /public/students/{student_id}/departments/{department_name}:
+  /api/logout:
+    post:
+      description: Clears the session cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Log out
+      tags:
+      - auth
+  /api/my/courses:
     get:
-      description: 'Peer API: verify whether a student belongs to a specific department.
-        Requires x-api-key header.'
-      parameters:
-      - description: Student ID
-        in: path
-        name: student_id
-        required: true
-        type: string
-      - description: Department name
-        in: path
-        name: department_name
-        required: true
-        type: string
+      description: Get all course offerings the current student is enrolled in
       produces:
       - application/json
       responses:
@@ -314,18 +370,38 @@ paths:
             - $ref: '#/definitions/internal.ResponseBody'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_publicapi.VerifyDepartmentResponse'
+                  items:
+                    $ref: '#/definitions/internal_semestercourse.CourseOffering'
+                  type: array
               type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/internal.ResponseBody'
       security:
-      - ApiKeyAuth: []
-      summary: Verify student department enrollment
+      - BearerAuth: []
+      summary: List the authenticated student's enrolled courses
       tags:
-      - public-api
-  /semester-courses:
+      - semester-courses
+  /api/professors:
+    get:
+      description: Get all professors by name
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_professor.ProfessorData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List professors
+      tags:
+      - professors
+  /api/semester-courses:
     get:
       description: Get all course offerings for a given semester
       parameters:
@@ -394,9 +470,62 @@ paths:
       summary: Create semester course schedule
       tags:
       - semester-courses
-  /student:
+  /api/semesters:
     get:
-      description: Get all students with department names
+      description: Get all distinct semesters that have course offerings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List semesters
+      tags:
+      - semester-courses
+  /api/session:
+    get:
+      description: Returns the authenticated user's id and role based on the session
+        cookie or bearer token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.Claims'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Current session
+      tags:
+      - auth
+  /api/students:
+    get:
+      description: Get all students with department names, optionally filtered by
+        name, ID or department. Professor or admin only.
+      parameters:
+      - description: Filter by name, ID or department
+        in: query
+        name: q
+        type: string
       produces:
       - application/json
       responses:
@@ -416,7 +545,7 @@ paths:
       summary: List students
       tags:
       - students
-  /textbooks:
+  /api/textbooks:
     get:
       description: Search for textbooks via OpenLibrary API
       parameters:
@@ -444,6 +573,50 @@ paths:
       summary: Search textbooks
       tags:
       - textbooks
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Health check
+  /public/students/{student_id}/departments/{department_name}:
+    get:
+      description: 'Peer API: verify whether a student belongs to a specific department.
+        Requires x-api-key header.'
+      parameters:
+      - description: Student ID
+        in: path
+        name: student_id
+        required: true
+        type: string
+      - description: Department name
+        in: path
+        name: department_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_publicapi.VerifyDepartmentResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - ApiKeyAuth: []
+      summary: Verify student department enrollment
+      tags:
+      - public-api
 schemes:
 - http
 securityDefinitions:
