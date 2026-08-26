@@ -13,13 +13,6 @@ type contextKey string
 
 const ClaimsKey contextKey = "claims"
 
-const TokenCookie = "edu_token"
-
-type Claims struct {
-	UserID uint   `json:"user_id"`
-	Role   string `json:"role"`
-}
-
 type JWTAuth struct {
 	secret string
 }

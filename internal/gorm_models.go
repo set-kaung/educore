@@ -30,9 +30,10 @@ type Professor struct {
 
 type SemesterCourseSchedule struct {
 	gorm.Model
-	SemesterCourseID uint       `gorm:"column:semester_course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	From             time.Time  `gorm:"column:from;not null"`
-	To               *time.Time `gorm:"column:to;null"`
+	SemesterCourseID uint      `gorm:"column:semester_course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Weekday          string    `gorm:"column:weekday;type:varchar(10);not null"`
+	StartTime        time.Time `gorm:"column:start_time;type:time;not null"`
+	EndTime          time.Time `gorm:"column:end_time;type:time;not null"`
 	SemesterCourse   SemesterCourse
 }
 

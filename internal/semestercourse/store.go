@@ -16,17 +16,26 @@ func createSchedule(db *gorm.DB, schedule internal.SemesterCourseSchedule) error
 	return db.Create(&schedule).Error
 }
 
-func HasConflict(db *gorm.DB, professorID uint, semester string, from, to time.Time) (bool, error) {
+func HasConflict(db *gorm.DB, professorID uint, semester, weekday string, from, to time.Time) (bool, error) {
 	var count int64
 	err := db.Table("semester_course_schedules as scs").
 		Joins("JOIN semester_courses sc ON sc.id = scs.semester_course_id").
-		Where("sc.semester = ? AND sc.taught_by = ? AND scs.from < ? AND scs.to > ?",
-			semester, professorID, to, from).
+		Where("sc.semester = ? AND sc.taught_by = ? AND scs.weekday = ? AND scs.start_time < ? AND scs.end_time > ?",
+			semester, professorID, weekday, to, from).
 		Count(&count).Error
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func ListSemesters(db *gorm.DB) ([]string, error) {
+	var semesters []string
+	err := db.Model(&internal.SemesterCourse{}).
+		Distinct("semester").
+		Order("semester desc").
+		Pluck("semester", &semesters).Error
+	return semesters, err
 }
 
 func GetOfferingsBySemester(db *gorm.DB, semester string) ([]CourseOffering, error) {

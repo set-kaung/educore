@@ -2,15 +2,26 @@ package semestercourse
 
 import (
 	"errors"
-	"time"
 )
 
 var ErrInvalidScheduleTime = errors.New("invalid schedule time")
+var ErrInvalidWeekday = errors.New("invalid weekday")
 var ErrScheduleConflict = errors.New("professor has a conflicting schedule")
 
+var validWeekdays = map[string]bool{
+	"Monday":    true,
+	"Tuesday":   true,
+	"Wednesday": true,
+	"Thursday":  true,
+	"Friday":    true,
+	"Saturday":  true,
+	"Sunday":    true,
+}
+
 type Schedule struct {
-	From time.Time `json:"from"`
-	To   time.Time `json:"to"`
+	Weekday   string `json:"weekday"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 }
 
 type CourseOffering struct {

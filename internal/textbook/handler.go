@@ -22,7 +22,7 @@ func NewTextbookHandler(userAgent string) *TextbookHandler {
 // @Param        q   query  string  true  "Search query"
 // @Success      200  {object}  internal.ResponseBody{data=openlibrary.SearchResult}
 // @Failure      400  {object}  internal.ResponseBody
-// @Router       /textbooks [get]
+// @Router       /api/textbooks [get]
 func (h *TextbookHandler) HandleSearch(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	query := r.URL.Query().Get("q")
 	if query == "" {

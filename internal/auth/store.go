@@ -23,5 +23,5 @@ func Login(authenticator Authenticator, req LoginRequest, jwtSecret string) (Log
 		return LoginResult{}, err
 	}
 
-	return LoginResult{Token: signed}, nil
+	return LoginResult{Token: signed, Role: result.Role}, nil
 }

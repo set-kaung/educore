@@ -2,6 +2,7 @@ package semestercourse
 
 import (
 	"educore/internal"
+	"educore/internal/auth"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -17,6 +18,44 @@ func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{db: db}
 }
 
+// HandleListSemesters godoc
+// @Summary      List semesters
+// @Description  Get all distinct semesters that have course offerings
+// @Tags         semester-courses
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  internal.ResponseBody{data=[]string}
+// @Router       /api/semesters [get]
+func (h *Handler) HandleListSemesters(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	semesters, err := ListSemesters(h.db)
+	if err != nil {
+		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "could not list semesters", Err: err}
+	}
+
+	internal.WriteData(w, "", semesters, nil)
+	return nil
+}
+
+// HandleGetEnrolled godoc
+// @Summary      List the authenticated student's enrolled courses
+// @Description  Get all course offerings the current student is enrolled in
+// @Tags         semester-courses
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  internal.ResponseBody{data=[]CourseOffering}
+// @Router       /api/my/courses [get]
+func (h *Handler) HandleGetEnrolled(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	claims := auth.GetClaims(r)
+
+	courses, err := GetEnrolledCourses(h.db, claims.UserID)
+	if err != nil {
+		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "could not get enrolled courses", Err: err}
+	}
+
+	internal.WriteData(w, "", courses, nil)
+	return nil
+}
+
 // HandleGetBySemester godoc
 // @Summary      List semester course offerings
 // @Description  Get all course offerings for a given semester
@@ -26,7 +65,7 @@ func NewHandler(db *gorm.DB) *Handler {
 // @Param        semester  query  string  true  "Semester (e.g. Fall2026)"
 // @Success      200  {object}  internal.ResponseBody{data=[]CourseOffering}
 // @Failure      400  {object}  internal.ResponseBody
-// @Router       /semester-courses [get]
+// @Router       /api/semester-courses [get]
 func (h *Handler) HandleGetBySemester(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	semester := r.URL.Query().Get("semester")
 	if semester == "" {
@@ -53,7 +92,7 @@ func (h *Handler) HandleGetBySemester(w http.ResponseWriter, r *http.Request) *i
 // @Success      200  {object}  internal.ResponseBody{data=CreateResponse}
 // @Failure      400  {object}  internal.ResponseBody
 // @Failure      409  {object}  internal.ResponseBody
-// @Router       /semester-courses [post]
+// @Router       /api/semester-courses [post]
 func (h *Handler) HandleCreate(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	var req CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -67,6 +106,9 @@ func (h *Handler) HandleCreate(w http.ResponseWriter, r *http.Request) *internal
 		}
 		if errors.Is(err, ErrInvalidScheduleTime) {
 			return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid schedule time", Err: err}
+		}
+		if errors.Is(err, ErrInvalidWeekday) {
+			return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid weekday", Err: err}
 		}
 		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "could not create semester course", Err: err}
 	}

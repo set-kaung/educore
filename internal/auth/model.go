@@ -7,4 +7,5 @@ type LoginRequest struct {
 
 type LoginResult struct {
 	Token string `json:"token"`
+	Role  string `json:"role"`
 }
