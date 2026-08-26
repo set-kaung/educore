@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 //	@title			EduCore API
@@ -22,6 +23,7 @@ import (
 // @in							header
 // @name						x-api-key
 func main() {
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -43,17 +45,27 @@ func main() {
 		return
 	}
 
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "web/public"
+	}
+
 	conf := Config{
 		DSN:         dsn,
 		JWTSecret:   jwtSecret,
 		AuthType:    os.Getenv("AUTH_TYPE"),
 		OLUserAgent: os.Getenv("OPENLIBRARY_USER_AGENT"),
+		StaticDir:   staticDir,
 	}
 
 	mux, err := Setup(conf)
 	if err != nil {
 		slog.Error("failed to create server", "reason", err.Error())
 		return
+	}
+
+	if abs, err := filepath.Abs(staticDir); err == nil {
+		slog.Info("serving static files", "dir", abs)
 	}
 
 	slog.Info("starting HTTP server",

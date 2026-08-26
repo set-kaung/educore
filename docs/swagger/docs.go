@@ -112,7 +112,45 @@ const docTemplate = `{
                 }
             }
         },
-        "/courses": {
+        "/api/courses": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all course listings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "courses"
+                ],
+                "summary": "List courses",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal.Course"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -169,22 +207,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/health": {
-            "get": {
-                "summary": "Health check",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/internal.ResponseBody"
-                        }
-                    }
-                }
-            }
-        },
-        "/login": {
+        "/api/login": {
             "post": {
-                "description": "Authenticate with username and password, returns JWT",
+                "description": "Authenticate with username and password, sets the session cookie and returns a JWT",
                 "consumes": [
                     "application/json"
                 ],
@@ -234,37 +259,41 @@ const docTemplate = `{
                 }
             }
         },
-        "/public/students/{student_id}/departments/{department_name}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Peer API: verify whether a student belongs to a specific department. Requires x-api-key header.",
+        "/api/logout": {
+            "post": {
+                "description": "Clears the session cookie",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "public-api"
+                    "auth"
                 ],
-                "summary": "Verify student department enrollment",
-                "parameters": [
+                "summary": "Log out",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/my/courses": {
+            "get": {
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Student ID",
-                        "name": "student_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Department name",
-                        "name": "department_name",
-                        "in": "path",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
+                "description": "Get all course offerings the current student is enrolled in",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "List the authenticated student's enrolled courses",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -277,23 +306,60 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_publicapi.VerifyDepartmentResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_semestercourse.CourseOffering"
+                                            }
                                         }
                                     }
                                 }
                             ]
                         }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
+                    }
+                }
+            }
+        },
+        "/api/professors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all professors by name",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "professors"
+                ],
+                "summary": "List professors",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal.ResponseBody"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_professor.ProfessorData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
             }
         },
-        "/semester-courses": {
+        "/api/semester-courses": {
             "get": {
                 "security": [
                     {
@@ -409,14 +475,97 @@ const docTemplate = `{
                 }
             }
         },
-        "/student": {
+        "/api/semesters": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all students with department names",
+                "description": "Get all distinct semesters that have course offerings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "List semesters",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/session": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's id and role based on the session cookie or bearer token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Current session",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_auth.Claims"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/students": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all students with department names, optionally filtered by name, ID or department. Professor or admin only.",
                 "produces": [
                     "application/json"
                 ],
@@ -424,6 +573,14 @@ const docTemplate = `{
                     "students"
                 ],
                 "summary": "List students",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by name, ID or department",
+                        "name": "q",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -449,7 +606,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/textbooks": {
+        "/api/textbooks": {
             "get": {
                 "description": "Search for textbooks via OpenLibrary API",
                 "produces": [
@@ -489,6 +646,78 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/students/{student_id}/departments/{department_name}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Peer API: verify whether a student belongs to a specific department. Requires x-api-key header.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "public-api"
+                ],
+                "summary": "Verify student department enrollment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Student ID",
+                        "name": "student_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Department name",
+                        "name": "department_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_publicapi.VerifyDepartmentResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/internal.ResponseBody"
                         }
@@ -541,6 +770,41 @@ const docTemplate = `{
                 }
             }
         },
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal.Course": {
+            "type": "object",
+            "properties": {
+                "courseCode": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "internal.ResponseBody": {
             "type": "object",
             "properties": {
@@ -552,6 +816,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_auth.Claims": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -570,6 +845,9 @@ const docTemplate = `{
         "internal_auth.LoginResult": {
             "type": "object",
             "properties": {
+                "role": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 }
@@ -592,6 +870,17 @@ const docTemplate = `{
                 "course_code": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_professor.ProfessorData": {
+            "type": "object",
+            "properties": {
                 "id": {
                     "type": "integer"
                 },
@@ -711,10 +1000,13 @@ const docTemplate = `{
         "internal_semestercourse.Schedule": {
             "type": "object",
             "properties": {
-                "from": {
+                "end_time": {
                     "type": "string"
                 },
-                "to": {
+                "start_time": {
+                    "type": "string"
+                },
+                "weekday": {
                     "type": "string"
                 }
             }
