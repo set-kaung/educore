@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+    <script src="/js/vendor/htmx.min.js" defer></script>
+    <script src="/js/vendor/mustache.min.js" defer></script>
+    <script src="/js/vendor/client-side-templates.js" defer></script>
+</head>
+<body>
+<main>
+    <section class="center-page">
+        <div class="card w-full text-center">
+            <h1 class="display-title">EduCore</h1>
+            <p class="lede">Loading…</p>
+        </div>
+    </section>
+</main>
+<script type="module">
+    import { initPage } from "/js/app.js";
+    initPage({ redirectHome: true });
+</script>
+</body>
+</html>

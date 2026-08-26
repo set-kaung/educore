@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add Course · EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+    <script src="/js/vendor/htmx.min.js" defer></script>
+    <script src="/js/vendor/mustache.min.js" defer></script>
+    <script src="/js/vendor/client-side-templates.js" defer></script>
+</head>
+<body data-page="add-course">
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">EduCore</a>
+        <nav id="nav" class="site-nav" hidden>
+            <a class="nav-link" href="/course-offerings" data-page="course-offerings">Course Offerings</a>
+            <a class="nav-link" href="/my-courses" data-page="my-courses" data-role="student">My Courses</a>
+            <a class="nav-link" href="/students" data-page="students" data-role="professor admin">Students</a>
+            <a class="nav-link" href="/add-course" data-page="add-course" data-role="professor admin">Add Course</a>
+            <a class="nav-link" href="/add-offering" data-page="add-offering" data-role="professor admin">Add Offering</a>
+        </nav>
+        <div class="user-menu">
+            <span id="role-badge" class="role-badge" hidden></span>
+            <button id="logout-btn" type="button" class="btn btn-link" hidden>Log out</button>
+        </div>
+    </div>
+</header>
+<main class="page"
+      hx-ext="client-side-templates">
+    <div class="page-header">
+        <h1 class="page-title">Add Course</h1>
+        <span id="course-count" class="page-count"></span>
+    </div>
+
+    <p id="course-error" class="form-error max-w-md" hidden></p>
+
+    <form id="course-form" class="card max-w-md form-stack">
+        <div>
+            <label class="field-label" for="name">Course Name</label>
+            <input class="field" type="text" id="name" name="name"
+                   placeholder="e.g. Introduction to Computer Science" required>
+        </div>
+        <div>
+            <label class="field-label" for="course_code">Course Code</label>
+            <input class="field" type="text" id="course_code" name="course_code"
+                   placeholder="e.g. CS101" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Create Course</button>
+    </form>
+
+    <h2 class="section-title">Existing Courses</h2>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Code</th>
+        </tr>
+        </thead>
+        <tbody id="course-rows"
+               hx-get="/api/courses"
+               hx-trigger="load"
+               hx-target="this"
+               mustache-template="tpl-course-rows">
+        </tbody>
+    </table>
+
+    <template id="tpl-course-rows">
+        {{#data}}
+        <tr>
+            <td>{{name}}</td>
+            <td>{{course_code}}</td>
+        </tr>
+        {{/data}}
+        {{^data}}
+        <tr>
+            <td colspan="2" class="empty-row">No courses yet.</td>
+        </tr>
+        {{/data}}
+    </template>
+</main>
+<script type="module">
+    import { initPage, flash } from "/js/app.js";
+
+    await initPage({ require: ["professor", "admin"] });
+
+    const form = document.getElementById("course-form");
+    const errorBox = document.getElementById("course-error");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorBox.hidden = true;
+
+        try {
+            const res = await fetch("/api/courses", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: form.name.value.trim(),
+                    course_code: form.course_code.value.trim(),
+                }),
+            });
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.message || "Could not create the course.");
+
+            flash(`Course "${body.data.name}" created successfully.`);
+            location.reload();
+        } catch (err) {
+            errorBox.textContent = err.message;
+            errorBox.hidden = false;
+        }
+    });
+
+    const count = document.getElementById("course-count");
+    document.body.addEventListener("htmx:afterSwap", (evt) => {
+        if (evt.target.id !== "course-rows") return;
+        const empty = document.querySelector("#course-rows .empty-row");
+        count.textContent = empty ? "" : `${document.querySelectorAll("#course-rows tr").length} courses`;
+    });
+</script>
+</body>
+</html>

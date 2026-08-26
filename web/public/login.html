@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Log in · EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+    <script src="/js/vendor/htmx.min.js" defer></script>
+    <script src="/js/vendor/mustache.min.js" defer></script>
+    <script src="/js/vendor/client-side-templates.js" defer></script>
+</head>
+<body data-page="login">
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">EduCore</a>
+        <nav id="nav" class="site-nav" hidden>
+            <a class="nav-link" href="/login" data-page="login" data-guest>Log in</a>
+        </nav>
+    </div>
+</header>
+<main>
+    <section class="center-page">
+        <div class="card w-full">
+            <h1 class="card-title">Log in</h1>
+            <p id="login-error" class="form-error" hidden></p>
+            <form id="login-form" class="form-stack">
+                <div>
+                    <label class="field-label" for="username">Username</label>
+                    <input class="field" type="text" id="username" name="username"
+                           autocomplete="username" autofocus required>
+                </div>
+                <div>
+                    <label class="field-label" for="password">Password</label>
+                    <input class="field" type="password" id="password" name="password"
+                           autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Log in</button>
+            </form>
+        </div>
+    </section>
+</main>
+<script type="module">
+    import { initPage, login, homeFor } from "/js/app.js";
+
+    await initPage({ guestOnly: true });
+
+    const form = document.getElementById("login-form");
+    const errorBox = document.getElementById("login-error");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorBox.hidden = true;
+
+        try {
+            const session = await login(form.username.value, form.password.value);
+            location.assign(homeFor(session));
+        } catch (err) {
+            errorBox.textContent = err.message;
+            errorBox.hidden = false;
+        }
+    });
+</script>
+</body>
+</html>

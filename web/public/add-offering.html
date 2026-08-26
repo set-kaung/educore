@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add Course Offering · EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+    <script src="/js/vendor/htmx.min.js" defer></script>
+    <script src="/js/vendor/mustache.min.js" defer></script>
+    <script src="/js/vendor/client-side-templates.js" defer></script>
+</head>
+<body data-page="add-offering">
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">EduCore</a>
+        <nav id="nav" class="site-nav" hidden>
+            <a class="nav-link" href="/course-offerings" data-page="course-offerings">Course Offerings</a>
+            <a class="nav-link" href="/my-courses" data-page="my-courses" data-role="student">My Courses</a>
+            <a class="nav-link" href="/students" data-page="students" data-role="professor admin">Students</a>
+            <a class="nav-link" href="/add-course" data-page="add-course" data-role="professor admin">Add Course</a>
+            <a class="nav-link" href="/add-offering" data-page="add-offering" data-role="professor admin">Add Offering</a>
+        </nav>
+        <div class="user-menu">
+            <span id="role-badge" class="role-badge" hidden></span>
+            <button id="logout-btn" type="button" class="btn btn-link" hidden>Log out</button>
+        </div>
+    </div>
+</header>
+<main class="page"
+      hx-ext="client-side-templates">
+    <div class="page-header">
+        <h1 class="page-title">Add Course Offering</h1>
+    </div>
+
+    <p id="offering-error" class="form-error max-w-xl" hidden></p>
+
+    <form id="offering-form" class="card max-w-xl form-stack-lg">
+        <div>
+            <label class="field-label" for="semester">Semester</label>
+            <input class="field" type="text" id="semester" name="semester"
+                   placeholder="e.g. Fall2026" required>
+        </div>
+
+        <div>
+            <label class="field-label" for="course_id">Course</label>
+            <select class="field" id="course_id" name="course_id" required autocomplete="off"
+                    hx-get="/api/courses"
+                    hx-trigger="load"
+                    hx-target="this"
+                    hx-swap="innerHTML"
+                    mustache-template="tpl-course-options">
+                <option value="">Loading courses…</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="field-label" for="section">Section</label>
+            <input class="field" type="text" id="section" name="section"
+                   placeholder="e.g. 01" required>
+        </div>
+
+        <div>
+            <label class="field-label" for="taught_by">Professor</label>
+            <select class="field" id="taught_by" name="taught_by" required autocomplete="off"
+                    hx-get="/api/professors"
+                    hx-trigger="load"
+                    hx-target="this"
+                    hx-swap="innerHTML"
+                    mustache-template="tpl-professor-options">
+                <option value="">Loading professors…</option>
+            </select>
+        </div>
+
+        <fieldset>
+            <legend class="field-label">Schedule</legend>
+            <div id="schedule-rows" class="schedule-list"></div>
+            <button type="button" id="add-schedule" class="btn btn-link mt-2">+ Add another day</button>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary btn-block">Create Offering</button>
+    </form>
+
+    <template id="tpl-course-options">
+        <option value="" disabled selected>Select a course…</option>
+        {{#data}}
+        <option value="{{id}}">{{name}} ({{course_code}})</option>
+        {{/data}}
+    </template>
+
+    <template id="tpl-professor-options">
+        <option value="" disabled selected>Select a professor…</option>
+        {{#data}}
+        <option value="{{id}}">{{name}}</option>
+        {{/data}}
+    </template>
+
+    <template id="tpl-schedule-row">
+        <div data-schedule-row class="schedule-row">
+            <div>
+                <label class="field-label">Weekday</label>
+                <select class="field" name="schedule_weekday" required>
+                    <option value="" disabled selected>Select a day…</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Start time</label>
+                <input class="field" type="time" name="schedule_start_time" required>
+            </div>
+            <div>
+                <label class="field-label">End time</label>
+                <input class="field" type="time" name="schedule_end_time" required>
+            </div>
+            <button type="button" data-remove-row class="btn btn-link">Remove</button>
+        </div>
+    </template>
+</main>
+<script type="module">
+    import { initPage, flash } from "/js/app.js";
+
+    await initPage({ require: ["professor", "admin"] });
+
+    const form = document.getElementById("offering-form");
+    const errorBox = document.getElementById("offering-error");
+    const scheduleRows = document.getElementById("schedule-rows");
+    const rowTemplate = document.getElementById("tpl-schedule-row");
+
+    function addScheduleRow() {
+        scheduleRows.append(rowTemplate.content.cloneNode(true));
+    }
+
+    scheduleRows.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-row]")) {
+            event.target.closest("[data-schedule-row]").remove();
+        }
+    });
+
+    document.getElementById("add-schedule").addEventListener("click", () => {
+        if (!scheduleRows.children.length) {
+            addScheduleRow();
+            return;
+        }
+        scheduleRows.append(
+            scheduleRows.lastElementChild.cloneNode(true)
+        );
+        for (const input of scheduleRows.lastElementChild.querySelectorAll("input, select")) {
+            input.value = "";
+        }
+    });
+
+    addScheduleRow();
+
+    function collectSchedules() {
+        return Array.from(form.querySelectorAll("[data-schedule-row]"), (row) => ({
+            weekday: row.querySelector("[name=schedule_weekday]").value,
+            start_time: row.querySelector("[name=schedule_start_time]").value,
+            end_time: row.querySelector("[name=schedule_end_time]").value,
+        }));
+    }
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorBox.hidden = true;
+
+        try {
+            const res = await fetch("/api/semester-courses", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    semester: form.semester.value.trim(),
+                    course_id: Number(form.course_id.value),
+                    section: form.section.value.trim(),
+                    taught_by: Number(form.taught_by.value),
+                    schedules: collectSchedules(),
+                }),
+            });
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.message || "Could not create the course offering.");
+
+            flash(`Course offering created for ${body.data.semester}.`);
+            location.assign("/course-offerings");
+        } catch (err) {
+            errorBox.textContent = err.message;
+            errorBox.hidden = false;
+        }
+    });
+</script>
+</body>
+</html>

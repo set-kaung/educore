@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Students · EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+    <script src="/js/vendor/htmx.min.js" defer></script>
+    <script src="/js/vendor/mustache.min.js" defer></script>
+    <script src="/js/vendor/client-side-templates.js" defer></script>
+</head>
+<body data-page="students">
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">EduCore</a>
+        <nav id="nav" class="site-nav" hidden>
+            <a class="nav-link" href="/course-offerings" data-page="course-offerings">Course Offerings</a>
+            <a class="nav-link" href="/my-courses" data-page="my-courses" data-role="student">My Courses</a>
+            <a class="nav-link" href="/students" data-page="students" data-role="professor admin">Students</a>
+            <a class="nav-link" href="/add-course" data-page="add-course" data-role="professor admin">Add Course</a>
+            <a class="nav-link" href="/add-offering" data-page="add-offering" data-role="professor admin">Add Offering</a>
+        </nav>
+        <div class="user-menu">
+            <span id="role-badge" class="role-badge" hidden></span>
+            <button id="logout-btn" type="button" class="btn btn-link" hidden>Log out</button>
+        </div>
+    </div>
+</header>
+<main class="page"
+      hx-ext="client-side-templates">
+    <div class="page-header">
+        <h1 class="page-title">Students</h1>
+        <span id="student-count" class="page-count"></span>
+    </div>
+
+    <input class="field max-w-md" type="search" name="q"
+           placeholder="Filter by name, ID or department…"
+           hx-get="/api/students"
+           hx-trigger="input changed delay:300ms, search"
+           hx-target="#student-rows"
+           mustache-template="tpl-student-rows">
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Username</th>
+            <th>Student ID</th>
+            <th>Department</th>
+        </tr>
+        </thead>
+        <tbody id="student-rows"
+               hx-get="/api/students"
+               hx-trigger="load"
+               hx-target="this"
+               mustache-template="tpl-student-rows">
+        </tbody>
+    </table>
+
+    <template id="tpl-student-rows">
+        {{#data}}
+        <tr>
+            <td>{{username}}</td>
+            <td>{{student_id}}</td>
+            <td>{{department_name}}</td>
+        </tr>
+        {{/data}}
+        {{^data}}
+        <tr>
+            <td colspan="3" class="empty-row">No students found.</td>
+        </tr>
+        {{/data}}
+    </template>
+</main>
+<script type="module">
+    import { initPage } from "/js/app.js";
+
+    await initPage({ require: ["professor", "admin"] });
+
+    const count = document.getElementById("student-count");
+    document.body.addEventListener("htmx:afterSwap", (evt) => {
+        if (evt.target.id !== "student-rows") return;
+        const empty = document.querySelector("#student-rows .empty-row");
+        count.textContent = empty ? "" : `${document.querySelectorAll("#student-rows tr").length} shown`;
+    });
+</script>
+</body>
+</html>

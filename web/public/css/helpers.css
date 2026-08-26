@@ -1,0 +1,38 @@
+/* A few single-purpose helpers for width, spacing and text alignment.
+   Intentionally limited to what the pages actually use. */
+
+.w-full {
+    width: 100%;
+}
+
+.max-w-xs {
+    max-width: 20rem;
+}
+
+.max-w-md {
+    max-width: 28rem;
+}
+
+.max-w-xl {
+    max-width: 36rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mt-6 {
+    margin-top: 1.5rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--muted);
+}
