@@ -1,11 +1,17 @@
 package auth
 
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type SetupContext struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
 }
 
-type LoginResult struct {
-	Token string `json:"token"`
-	Role  string `json:"role"`
+type SetupRequest struct {
+	Name         string `json:"name"`
+	DepartmentID uint   `json:"department_id"`
+	StudentID    string `json:"student_id"`
+}
+
+type SetupResult struct {
+	UserID uint   `json:"user_id"`
+	Role   string `json:"role"`
 }

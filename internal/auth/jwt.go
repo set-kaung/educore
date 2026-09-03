@@ -58,6 +58,35 @@ func (j *JWTAuth) middleware(onError func(http.ResponseWriter, *http.Request, in
 				onError(w, r, statusCode, message)
 				return
 			}
+			if c.Scope != "" {
+				onError(w, r, http.StatusUnauthorized, "token not valid for this route")
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), ClaimsKey, c)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func (j *JWTAuth) SetupMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenStr := j.extractToken(r)
+			if tokenStr == "" {
+				j.writeJSONError(w, r, http.StatusUnauthorized, "missing or invalid authorization header")
+				return
+			}
+
+			c, statusCode, message := j.parseToken(tokenStr)
+			if statusCode != 0 {
+				j.writeJSONError(w, r, statusCode, message)
+				return
+			}
+			if c.Scope != "setup" {
+				j.writeJSONError(w, r, http.StatusUnauthorized, "setup token required")
+				return
+			}
 
 			ctx := context.WithValue(r.Context(), ClaimsKey, c)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -79,9 +108,27 @@ func (j *JWTAuth) parseToken(tokenStr string) (Claims, int, string) {
 	}
 
 	return Claims{
-		UserID: uint(mapClaims["user_id"].(float64)),
-		Role:   mapClaims["role"].(string),
+		UserID: mapUint(mapClaims, "user_id"),
+		Role:   mapString(mapClaims, "role"),
+		Scope:  mapString(mapClaims, "scope"),
+		OID:    mapString(mapClaims, "oid"),
+		Email:  mapString(mapClaims, "email"),
+		Name:   mapString(mapClaims, "name"),
 	}, 0, ""
+}
+
+func mapString(claims jwt.MapClaims, key string) string {
+	if v, ok := claims[key].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func mapUint(claims jwt.MapClaims, key string) uint {
+	if v, ok := claims[key].(float64); ok {
+		return uint(v)
+	}
+	return 0
 }
 
 func (j *JWTAuth) extractToken(r *http.Request) string {

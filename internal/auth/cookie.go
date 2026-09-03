@@ -9,6 +9,10 @@ const TokenCookie = "edu_token"
 type Claims struct {
 	UserID uint   `json:"user_id"`
 	Role   string `json:"role"`
+	Scope  string `json:"scope,omitempty"`
+	OID    string `json:"oid,omitempty"`
+	Email  string `json:"email,omitempty"`
+	Name   string `json:"name,omitempty"`
 }
 
 func SetTokenCookie(w http.ResponseWriter, r *http.Request, token string) {

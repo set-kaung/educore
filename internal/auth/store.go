@@ -6,22 +6,25 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Login(authenticator Authenticator, req LoginRequest, jwtSecret string) (LoginResult, error) {
-	result, err := authenticator.Authenticate(req.Username, req.Password)
-	if err != nil {
-		return LoginResult{}, err
-	}
+const sessionTokenTTL = 24 * time.Hour
+const setupTokenTTL = 15 * time.Minute
 
+func IssueSessionToken(jwtSecret string, userID uint, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": result.UserID,
-		"role":    result.Role,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		"user_id": userID,
+		"role":    role,
+		"exp":     time.Now().Add(sessionTokenTTL).Unix(),
 	})
+	return token.SignedString([]byte(jwtSecret))
+}
 
-	signed, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		return LoginResult{}, err
-	}
-
-	return LoginResult{Token: signed, Role: result.Role}, nil
+func IssueSetupToken(jwtSecret, oid, email, name string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"scope": "setup",
+		"oid":   oid,
+		"email": email,
+		"name":  name,
+		"exp":   time.Now().Add(setupTokenTTL).Unix(),
+	})
+	return token.SignedString([]byte(jwtSecret))
 }
