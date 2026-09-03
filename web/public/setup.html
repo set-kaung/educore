@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Set up account · EduCore</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/helpers.css">
+</head>
+<body data-page="setup">
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">EduCore</a>
+        <nav id="nav" class="site-nav" hidden>
+            <a class="nav-link" href="/login" data-page="login" data-guest>Log in</a>
+        </nav>
+    </div>
+</header>
+<main>
+    <section class="center-page">
+        <div class="card w-full">
+            <h1 class="card-title">Set up your account</h1>
+            <p class="lede">First sign-in with your university account — tell us a bit about you.</p>
+            <p id="setup-email" class="lede"></p>
+
+            <p id="setup-error" class="form-error" hidden></p>
+
+            <form id="setup-form" class="form-stack">
+                <div>
+                    <label class="field-label" for="name">Full name</label>
+                    <input class="field" type="text" id="name" name="name" autocomplete="name" required>
+                </div>
+                <div>
+                    <label class="field-label" for="department_id">Department</label>
+                    <select class="field" id="department_id" name="department_id" required>
+                        <option value="" disabled selected>Loading departments…</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label" for="student_id">Student ID</label>
+                    <input class="field" type="text" id="student_id" name="student_id" autocomplete="off" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Create account</button>
+            </form>
+        </div>
+    </section>
+</main>
+<script type="module" src="/js/setup.js"></script>
+</body>
+</html>

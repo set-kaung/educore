@@ -8,9 +8,6 @@
     <link rel="stylesheet" href="/css/layout.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/helpers.css">
-    <script src="/js/vendor/htmx.min.js" defer></script>
-    <script src="/js/vendor/mustache.min.js" defer></script>
-    <script src="/js/vendor/client-side-templates.js" defer></script>
 </head>
 <body data-page="my-courses">
 <header class="topbar">
@@ -29,8 +26,7 @@
         </div>
     </div>
 </header>
-<main class="page"
-      hx-ext="client-side-templates">
+<main class="page">
     <div class="page-header">
         <h1 class="page-title">My Courses</h1>
         <span id="course-count" class="page-count"></span>
@@ -44,44 +40,16 @@
             <th>Section</th>
             <th>Semester</th>
             <th>Professor</th>
+            <th>Schedule</th>
         </tr>
         </thead>
-        <tbody id="course-rows"
-               hx-get="/api/my/courses"
-               hx-trigger="load"
-               hx-target="this"
-               mustache-template="tpl-course-rows">
+        <tbody id="course-rows">
+        <tr>
+            <td colspan="6" class="empty-row">Loading your courses…</td>
+        </tr>
         </tbody>
     </table>
-
-    <template id="tpl-course-rows">
-        {{#data}}
-        <tr>
-            <td>{{name}}</td>
-            <td>{{course_code}}</td>
-            <td>{{section}}</td>
-            <td>{{semester}}</td>
-            <td>{{professor_name}}</td>
-        </tr>
-        {{/data}}
-        {{^data}}
-        <tr>
-            <td colspan="5" class="empty-row">You are not enrolled in any courses.</td>
-        </tr>
-        {{/data}}
-    </template>
 </main>
-<script type="module">
-    import { initPage } from "/js/app.js";
-
-    await initPage({});
-
-    const count = document.getElementById("course-count");
-    document.body.addEventListener("htmx:afterSwap", (evt) => {
-        if (evt.target.id !== "course-rows") return;
-        const empty = document.querySelector("#course-rows .empty-row");
-        count.textContent = empty ? "" : `${document.querySelectorAll("#course-rows tr").length} enrolled`;
-    });
-</script>
+<script type="module" src="/js/my-courses.js"></script>
 </body>
 </html>

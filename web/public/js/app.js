@@ -1,6 +1,7 @@
 // Shared glue between the static HTML pages and the JSON API.
 // All business logic lives behind /api/*; this file only handles
-// sessions, navigation, redirects and error toasts.
+// sessions, navigation, redirects, error toasts and rendering
+// API data into tables and selects.
 
 const sessionCache = { value: undefined };
 
@@ -14,21 +15,6 @@ export async function getSession(force = false) {
   } catch {
     sessionCache.value = null;
   }
-  return sessionCache.value;
-}
-
-export async function login(username, password) {
-  const res = await fetch("/api/login", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.message || "Login failed.");
-  }
-  sessionCache.value = { user_id: body.data.user_id, role: body.data.role };
   return sessionCache.value;
 }
 
@@ -76,7 +62,7 @@ function applyNav(session) {
   nav.hidden = false;
 }
 
-function showToast(message, isError = false) {
+export function showToast(message, isError = false) {
   let host = document.getElementById("toast-host");
   if (!host) {
     host = document.createElement("div");
@@ -124,27 +110,63 @@ function guardPage(session, options) {
   return true;
 }
 
-function wireHtmxErrors() {
-  document.body.addEventListener("htmx:responseError", (evt) => {
-    const status = evt.detail.xhr.status;
-    if (status === 401) {
-      location.assign("/login");
-      return;
-    }
-    let message = `Request failed (${status}).`;
-    try {
-      message = JSON.parse(evt.detail.xhr.responseText).message || message;
-    } catch {}
-    showToast(message, true);
-  });
-  document.body.addEventListener("htmx:sendError", () => {
+const escapeMap = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+  "`": "&#x60;",
+  "=": "&#x3D;",
+  "/": "&#x2F;",
+};
+
+export function esc(value) {
+  return String(value ?? "").replace(/[&<>"'`=\/]/g, (c) => escapeMap[c]);
+}
+
+export async function apiGet(url) {
+  let res;
+  try {
+    res = await fetch(url, { credentials: "same-origin" });
+  } catch {
     showToast("Network error. Please try again.", true);
-  });
+    throw new Error("Network error.");
+  }
+  if (res.status === 401) {
+    location.assign("/login");
+    throw new Error("Unauthorized.");
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = body.message || `Request failed (${res.status}).`;
+    showToast(message, true);
+    throw new Error(message);
+  }
+  return body.data;
+}
+
+export function renderRows(tbody, rows, { columns, empty, colspan }) {
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-row">${esc(empty)}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows
+    .map((row) => `<tr>${columns.map((key) => `<td>${esc(row[key])}</td>`).join("")}</tr>`)
+    .join("");
+}
+
+export function renderOptions(select, items, { value, label, placeholder }) {
+  select.innerHTML =
+    `<option value="" disabled selected>${esc(placeholder)}</option>` +
+    items.map((item) => `<option value="${esc(value(item))}">${esc(label(item))}</option>`).join("");
+}
+
+export function updateCount(el, tbody, label) {
+  el.textContent = tbody.querySelector(".empty-row") ? "" : `${tbody.rows.length} ${label}`;
 }
 
 export async function initPage(options = {}) {
-  wireHtmxErrors();
-
   const session = await getSession();
   applyNav(session);
 

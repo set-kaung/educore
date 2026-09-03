@@ -8,9 +8,6 @@
     <link rel="stylesheet" href="/css/layout.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/helpers.css">
-    <script src="/js/vendor/htmx.min.js" defer></script>
-    <script src="/js/vendor/mustache.min.js" defer></script>
-    <script src="/js/vendor/client-side-templates.js" defer></script>
 </head>
 <body data-page="course-offerings">
 <header class="topbar">
@@ -29,19 +26,14 @@
         </div>
     </div>
 </header>
-<main class="page"
-      hx-ext="client-side-templates">
+<main class="page">
     <div class="page-header">
         <h1 class="page-title">Course Offerings</h1>
         <span id="offering-count" class="page-count"></span>
     </div>
 
     <label class="field-label max-w-xs mt-2" for="semester">Semester</label>
-    <select id="semester" name="semester" class="field max-w-xs" autocomplete="off"
-            hx-get="/api/semester-courses"
-            hx-trigger="change"
-            hx-target="#offering-rows"
-            mustache-template="tpl-offering-rows">
+    <select id="semester" name="semester" class="field max-w-xs" autocomplete="off">
         <option value="">Loading semesters…</option>
     </select>
 
@@ -52,67 +44,17 @@
             <th>Code</th>
             <th>Section</th>
             <th>Professor</th>
+            <th>Schedule</th>
+            <th id="enroll-col" hidden></th>
         </tr>
         </thead>
         <tbody id="offering-rows">
         <tr>
-            <td colspan="4" class="empty-row">Select a semester.</td>
+            <td colspan="6" class="empty-row">Select a semester.</td>
         </tr>
         </tbody>
     </table>
-
-    <template id="tpl-offering-rows">
-        {{#data}}
-        <tr>
-            <td>{{name}}</td>
-            <td>{{course_code}}</td>
-            <td>{{section}}</td>
-            <td>{{professor_name}}</td>
-        </tr>
-        {{/data}}
-        {{^data}}
-        <tr>
-            <td colspan="4" class="empty-row">No offerings for this semester yet.</td>
-        </tr>
-        {{/data}}
-    </template>
 </main>
-<script type="module">
-    import { initPage } from "/js/app.js";
-
-    await initPage({});
-
-    const select = document.getElementById("semester");
-    const count = document.getElementById("offering-count");
-
-    document.body.addEventListener("htmx:afterSwap", (evt) => {
-        if (evt.target.id !== "offering-rows") return;
-        const empty = document.querySelector("#offering-rows .empty-row");
-        count.textContent = empty ? "" : `${document.querySelectorAll("#offering-rows tr").length} offerings`;
-    });
-
-    const loadSemesters = async () => {
-        try {
-            const res = await fetch("/api/semesters", { credentials: "same-origin" });
-            const body = await res.json();
-            if (!res.ok) throw new Error(body.message);
-
-            select.innerHTML = "";
-            for (const semester of body.data) {
-                select.append(new Option(semester, semester));
-            }
-            if (body.data.length) {
-                select.value = body.data[0];
-                htmx.trigger(select, "change");
-            } else {
-                select.innerHTML = '<option value="">No semesters yet</option>';
-            }
-        } catch (err) {
-            select.innerHTML = '<option value="">Failed to load semesters</option>';
-            console.error(err);
-        }
-    };
-    loadSemesters();
-</script>
+<script type="module" src="/js/course-offerings.js"></script>
 </body>
 </html>
