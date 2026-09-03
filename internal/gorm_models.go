@@ -12,20 +12,31 @@ type Course struct {
 	CourseCode string `gorm:"column:course_code;not null,uniqueIndex"`
 }
 
-type Enrollment struct {
-	gorm.Model
-	StudentID        uint `gorm:"column:student_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	SemesterCourseID uint `gorm:"column:semester_course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	Student          Student
-	SemesterCourse   SemesterCourse
-}
-
-type Professor struct {
+type User struct {
 	gorm.Model
 	Name         string `gorm:"column:name;not null"`
 	DepartmentID uint   `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
 	ADObjectID   string `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
+	Role         string `gorm:"column:role;type:enum('student','professor');not null"`
+	Username     string `gorm:"column:username"`
+	StudentID    string `gorm:"column:student_id"`
 	Department   Department
+}
+
+type Enrollment struct {
+	gorm.Model
+	UserID           uint `gorm:"column:user_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	SemesterCourseID uint `gorm:"column:semester_course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	User             User
+	SemesterCourse   SemesterCourse
+}
+
+type Semester struct {
+	gorm.Model
+	Name      string     `gorm:"column:name;not null;uniqueIndex"`
+	IsCurrent bool       `gorm:"column:is_current;not null;default:false"`
+	StartDate *time.Time `gorm:"column:start_date"`
+	EndDate   *time.Time `gorm:"column:end_date"`
 }
 
 type SemesterCourseSchedule struct {
@@ -39,27 +50,19 @@ type SemesterCourseSchedule struct {
 
 type SemesterCourse struct {
 	gorm.Model
-	Semester  string `gorm:"column:semester;not null"`
-	CourseID  uint   `gorm:"column:course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	Section   string `gorm:"column:section;not null"`
-	TeachBy   uint   `gorm:"column:taught_by;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	Course    Course
-	Professor Professor `gorm:"foreignKey:TeachBy"`
-}
-
-type Student struct {
-	gorm.Model
-	Username     string `gorm:"column:username;not null"`
-	StudentID    string `gorm:"column:student_id;not null"`
-	DepartmentID uint   `gorm:"column:department_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
-	ADObjectID   string `gorm:"column:ad_object_id;type:varchar(255);uniqueIndex"`
-	Department   Department
+	SemesterID uint   `gorm:"column:semester_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	CourseID   uint   `gorm:"column:course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Section    string `gorm:"column:section;not null"`
+	TeachBy    uint   `gorm:"column:taught_by;type:bigint unsigned;not null;constraint:OnDelete:CASCADE"`
+	Semester   Semester
+	Course     Course
+	Professor  User `gorm:"foreignKey:TeachBy"`
 }
 
 type Token struct {
 	gorm.Model
 	UserID    uint      `gorm:"column:user_id;type:bigint unsigned;not null"`
-	Token     string    `gorm:"column:token;type:varchar(255);not null;uniqueIndex"`
+	Token     string    `gorm:"column:token;type:varchar(255);not null,uniqueIndex"`
 	ExpiresAt time.Time `gorm:"column:expires_at;not null"`
 }
 
@@ -67,13 +70,13 @@ type ApiKey struct {
 	gorm.Model
 	Name  string `gorm:"column:name;type:varchar(255);not null"`
 	Email string `gorm:"column:email;type:varchar(255);not null"`
-	Key   string `gorm:"column:key;type:varchar(255);not null;uniqueIndex"`
+	Key   string `gorm:"column:key;type:varchar(255);not null,uniqueIndex"`
 	Valid bool   `gorm:"column:valid;not null;default:true"`
 }
 
 type Department struct {
 	gorm.Model
-	Name string `gorm:"column:name;type:varchar(255);not null;uniqueIndex"`
+	Name string `gorm:"column:name;type:varchar(255);not null,uniqueIndex"`
 }
 
 type SupportTicket struct {
@@ -85,11 +88,11 @@ type SupportTicket struct {
 
 var Models = []interface{}{
 	&Course{},
+	&User{},
+	&Semester{},
 	&Enrollment{},
-	&Professor{},
 	&SemesterCourseSchedule{},
 	&SemesterCourse{},
-	&Student{},
 	&Token{},
 	&ApiKey{},
 	&Department{},
