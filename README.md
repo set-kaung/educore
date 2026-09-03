@@ -43,7 +43,8 @@ EduCore is a course-registration backend with two primary roles:
 - **MySQL** database server
 - **DATABASE_URL** environment variable (e.g. `root:password@tcp(127.0.0.1:3306)/educore?parseTime=true`)
 - **JWT_SECRET** environment variable
-- **AUTH_TYPE** environment variable (`mock` for testing, `ad` for Active Directory)
+- **AD_CLIENT_ID**, **AD_TENANT_ID**, **AD_CLIENT_SECRET** — from the Entra ID app registration
+- **AD_REDIRECT_URI** — must exactly match a redirect URI registered on the app (e.g. `http://localhost:8080/auth/callback`)
 
 ### Go Dependencies
 
@@ -60,47 +61,45 @@ go mod tidy
 
 ## Web UI
 
-The UI is a set of plain static HTML files served from `web/public/` — no Go templating and no frontend build step. Pages use htmx (with client-side mustache templates) and small ES modules to call the JSON API directly, keeping UI and business logic fully separated. Styles are hand-written plain CSS split into `base.css` (tokens + reset), `layout.css` (page shell), `components.css` (buttons, forms, tables, toasts) and a few width/spacing helpers in `helpers.css`.
+The UI is a set of plain static HTML files served from `web/public/` — no Go templating and no frontend build step. Pages are small ES modules that call the JSON API directly with `fetch` and render the data into tables/selects (HTML-escaped via a shared `esc` helper), keeping UI and business logic fully separated. Styles are hand-written plain CSS split into `base.css` (tokens + reset), `layout.css` (page shell), `components.css` (buttons, forms, tables, toasts) and a few width/spacing helpers in `helpers.css`.
 
 ### Pages
 
 | Route                  | Description                                          | Access          |
 | ---------------------- | ---------------------------------------------------- | --------------- |
 | `GET /{$}`             | Redirects per role (`/my-courses`, `/students`, `/login`) | public     |
-| `GET /login`           | Login form                                           | guests only     |
+| `GET /login`           | University (Entra ID) sign-in page      | guests only     |
+| `GET /setup`           | First-time account setup after AD sign-in | public          |
 | `GET /students`        | Student list with live search                        | professor/admin |
 | `GET /my-courses`      | Courses the logged-in student is enrolled in         | logged in       |
-| `GET /course-offerings`| Offerings filtered by semester                       | logged in       |
+| `GET /course-offerings`| Offerings filtered by semester (students can enroll) | logged in       |
 | `GET /add-course`      | Create course listings                               | professor/admin |
 | `GET /add-offering`    | Schedule a course offering                           | professor/admin |
-| `GET /css/`, `GET /js/` | Stylesheets, vendored JS and page modules            | public          |
+| `GET /css/`, `GET /js/` | Stylesheets and page modules             | public          |
 
 ### API endpoints used by the UI
 
 | Endpoint                        | Purpose                                  | Access          |
 | ------------------------------- | ---------------------------------------- | --------------- |
-| `POST /api/login`               | JSON login, sets `HttpOnly` session cookie | public + same-origin |
 | `POST /api/logout`              | Clears the session cookie                | public + same-origin |
 | `GET /api/session`              | Current user id + role                   | logged in       |
+| `GET /auth/login`               | Start university (Entra ID) sign-in      | public          |
+| `GET /auth/callback`            | OIDC callback, issues session or setup token | public     |
+| `GET /setup`                    | First-time account setup page            | public          |
+| `GET /api/setup/context`        | Setup prefill (email, name)              | setup token     |
+| `POST /api/setup`               | Create account from directory identity   | setup token     |
+| `GET /api/departments`          | Department options (seeds defaults)      | public          |
 | `GET /api/students?q=`          | Student list with filter                 | professor/admin |
 | `GET /api/my/courses`           | Enrolled courses for current student     | logged in       |
-| `GET /api/semesters`            | Distinct semesters                       | logged in       |
-| `GET /api/semester-courses?semester=` | Offerings per semester             | logged in       |
+| `GET /api/semesters`            | Semester records (current one flagged)     | logged in       |
+| `GET /api/semester-courses?semester_id=` | Offerings for a semester         | logged in       |
 | `POST /api/semester-courses`    | Create offering (checks conflicts)       | professor/admin |
+| `POST /api/semester-courses/{id}/enroll` | Enroll in an offering (checks schedule conflicts) | student |
 | `GET /api/courses`              | Course listings                          | logged in       |
 | `POST /api/courses`             | Create course listing                    | professor/admin |
 | `GET /api/professors`           | Professor directory                      | logged in       |
 
 State-changing `/api/*` requests are protected by a same-origin check (`Origin` / `Sec-Fetch-Site`). Browser sessions use the JWT delivered in an `HttpOnly`, `SameSite=Lax` cookie; API clients keep using the `Authorization: Bearer` header.
-
-### Test Users (`AUTH_TYPE=mock`)
-
-| Username | Role      |
-| -------- | --------- |
-| `prof1`  | professor |
-| `stu1`   | student   |
-
-Passwords are ignored by the mock authenticator.
 
 ### UI Project Layout
 
@@ -114,8 +113,7 @@ web/
     css/layout.css     # topbar, nav, page shell
     css/components.css # cards, buttons, forms, tables, toasts
     css/helpers.css    # small width/spacing/text helpers
-    js/app.js          # session/nav/toast glue between pages and API
-    js/vendor/         # htmx, client-side-templates ext, mustache
+    js/app.js          # session/nav/toast + fetch/render helpers
 
 internal/web/          # disk-backed static file server + same-origin guard
 ```
@@ -129,7 +127,10 @@ Set the environment variables and run:
 ```bash
 export DATABASE_URL="root:password@tcp(127.0.0.1:3306)/educore?parseTime=true"
 export JWT_SECRET="secret123"
-export AUTH_TYPE="mock"
+export AD_CLIENT_ID="..."
+export AD_TENANT_ID="..."
+export AD_CLIENT_SECRET="..."
+export AD_REDIRECT_URI="http://localhost:8080/auth/callback"
 export PORT=8080
 go run ./cmd/server
 ```
