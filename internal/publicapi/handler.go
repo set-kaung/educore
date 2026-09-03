@@ -53,11 +53,17 @@ func (h *Handler) HandleVerifyDepartmentEnrollment(w http.ResponseWriter, r *htt
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// 	@Param        body  body  GrantKeyRequest  true  "Partner details"
+//
+//	@Param        body  body  GrantKeyRequest  true  "Partner details"
+//
 // @Success      200  {object}  internal.ResponseBody{data=GrantKeyResponse}
 // @Failure      400  {object}  internal.ResponseBody
 // @Router       /admin/api-keys [post]
 func (h *Handler) HandleGrantKey(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	return h.grantKey(w, r)
+}
+
+func (h *Handler) grantKey(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	var req GrantKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid request body", Err: err}

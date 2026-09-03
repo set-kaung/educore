@@ -16,9 +16,9 @@ func ValidateAPIKey(db *gorm.DB, key string) (bool, error) {
 
 func IsStudentInDepartment(db *gorm.DB, studentID string, departmentName string) (bool, error) {
 	var count int64
-	err := db.Table("students as s").
-		Joins("JOIN departments d ON d.id = s.department_id").
-		Where("s.student_id = ? AND d.name = ?", studentID, departmentName).
+	err := db.Table("users as u").
+		Joins("JOIN departments d ON d.id = u.department_id").
+		Where("u.student_id = ? AND u.role = ? AND d.name = ?", studentID, "student", departmentName).
 		Count(&count).Error
 	return count > 0, err
 }

@@ -1,9 +1,9 @@
 package publicapi
 
 type VerifyDepartmentResponse struct {
-	StudentID    string `json:"student_id"`
-	Department   string `json:"department"`
-	Enrolled     bool   `json:"enrolled"`
+	StudentID  string `json:"student_id"`
+	Department string `json:"department"`
+	Enrolled   bool   `json:"enrolled"`
 }
 
 type GrantKeyRequest struct {
