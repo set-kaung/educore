@@ -92,13 +92,13 @@ func (s *StaticFiles) serveFile(w http.ResponseWriter, r *http.Request, name str
 }
 
 func (s *StaticFiles) resolve(name string) (string, error) {
-	clean := path.Clean("/" + name)
-	full := filepath.Join(s.dir, filepath.FromSlash(clean))
-
 	rootAbs, err := filepath.Abs(s.dir)
 	if err != nil {
 		return "", err
 	}
+
+	clean := path.Clean("/" + name)
+	full := filepath.Join(rootAbs, filepath.FromSlash(clean))
 	rootReal, err := filepath.EvalSymlinks(rootAbs)
 	if err != nil {
 		return "", err
