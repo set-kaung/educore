@@ -62,24 +62,41 @@ definitions:
     type: object
   internal_auth.Claims:
     properties:
+      email:
+        type: string
+      name:
+        type: string
+      oid:
+        type: string
       role:
+        type: string
+      scope:
         type: string
       user_id:
         type: integer
     type: object
-  internal_auth.LoginRequest:
+  internal_auth.SetupContext:
     properties:
-      password:
+      email:
         type: string
-      username:
+      name:
         type: string
     type: object
-  internal_auth.LoginResult:
+  internal_auth.SetupRequest:
+    properties:
+      department_id:
+        type: integer
+      name:
+        type: string
+      student_id:
+        type: string
+    type: object
+  internal_auth.SetupResult:
     properties:
       role:
         type: string
-      token:
-        type: string
+      user_id:
+        type: integer
     type: object
   internal_course.CourseRequest:
     properties:
@@ -92,6 +109,13 @@ definitions:
     properties:
       course_code:
         type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal_department.DepartmentData:
+    properties:
       id:
         type: integer
       name:
@@ -137,10 +161,14 @@ definitions:
         type: string
       professor_name:
         type: string
+      schedule:
+        type: string
       section:
         type: string
       semester:
         type: string
+      semester_course_id:
+        type: integer
     type: object
   internal_semestercourse.CreateRequest:
     properties:
@@ -152,8 +180,8 @@ definitions:
         type: array
       section:
         type: string
-      semester:
-        type: string
+      semester_id:
+        type: integer
       taught_by:
         type: integer
     type: object
@@ -174,6 +202,19 @@ definitions:
       taught_by:
         type: integer
     type: object
+  internal_semestercourse.EnrollResponse:
+    properties:
+      course_id:
+        type: integer
+      enrollment_id:
+        type: integer
+      section:
+        type: string
+      semester:
+        type: string
+      semester_course_id:
+        type: integer
+    type: object
   internal_semestercourse.Schedule:
     properties:
       end_time:
@@ -183,13 +224,28 @@ definitions:
       weekday:
         type: string
     type: object
+  internal_semesters.SemesterData:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: integer
+      is_current:
+        type: boolean
+      name:
+        type: string
+      start_date:
+        type: string
+    type: object
   internal_student.StudentData:
     properties:
       department_name:
         type: string
-      student_id:
+      id:
+        type: integer
+      name:
         type: string
-      username:
+      student_id:
         type: string
     type: object
 host: localhost:8080
@@ -312,19 +368,9 @@ paths:
       summary: Create a new course
       tags:
       - courses
-  /api/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate with username and password, sets the session cookie
-        and returns a JWT
-      parameters:
-      - description: Credentials
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/internal_auth.LoginRequest'
+  /api/departments:
+    get:
+      description: Get all departments, seeding a default set when none exist
       produces:
       - application/json
       responses:
@@ -335,15 +381,17 @@ paths:
             - $ref: '#/definitions/internal.ResponseBody'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_auth.LoginResult'
+                  items:
+                    $ref: '#/definitions/internal_department.DepartmentData'
+                  type: array
               type: object
-        "401":
-          description: Unauthorized
+        "500":
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/internal.ResponseBody'
-      summary: Log in
+      summary: List departments
       tags:
-      - auth
+      - departments
   /api/logout:
     post:
       description: Clears the session cookie
@@ -405,11 +453,11 @@ paths:
     get:
       description: Get all course offerings for a given semester
       parameters:
-      - description: Semester (e.g. Fall2026)
+      - description: Semester ID
         in: query
-        name: semester
+        name: semester_id
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
@@ -470,9 +518,49 @@ paths:
       summary: Create semester course schedule
       tags:
       - semester-courses
+  /api/semester-courses/{id}/enroll:
+    post:
+      description: Enroll the authenticated student in a semester course offering.
+        Rejects duplicate enrollment and schedule conflicts with courses the student
+        is already enrolled in.
+      parameters:
+      - description: Semester course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_semestercourse.EnrollResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Enroll in a course offering
+      tags:
+      - semester-courses
   /api/semesters:
     get:
-      description: Get all distinct semesters that have course offerings
+      description: Get all semesters, with the current one flagged
       produces:
       - application/json
       responses:
@@ -484,14 +572,14 @@ paths:
             - properties:
                 data:
                   items:
-                    type: string
+                    $ref: '#/definitions/internal_semesters.SemesterData'
                   type: array
               type: object
       security:
       - BearerAuth: []
       summary: List semesters
       tags:
-      - semester-courses
+      - semesters
   /api/session:
     get:
       description: Returns the authenticated user's id and role based on the session
@@ -515,6 +603,69 @@ paths:
       security:
       - BearerAuth: []
       summary: Current session
+      tags:
+      - auth
+  /api/setup:
+    post:
+      consumes:
+      - application/json
+      description: Create the Student account for the authenticated directory user
+        and issue a session. Requires a setup token.
+      parameters:
+      - description: Account details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.SetupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.SetupResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Complete account setup
+      tags:
+      - auth
+  /api/setup/context:
+    get:
+      description: Prefill data (email, suggested name) for first-time account setup.
+        Requires a setup token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.SetupContext'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      summary: Account setup context
       tags:
       - auth
   /api/students:

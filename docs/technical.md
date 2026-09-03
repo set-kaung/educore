@@ -16,9 +16,9 @@ Single binary serves the JSON API and a static HTML frontend from disk. UI and b
 
 ## Frontend stack (`web/public/`)
 
-- [htmx](https://htmx.org) + the `client-side-templates` extension + Mustache render JSON API responses into tables/selects declaratively in the HTML
-- `js/app.js` — ES module glue: session check via `GET /api/session`, role-based page guards and nav rendering, login/logout helpers, error toasts, 401 → `/login` redirect for htmx requests
-- Per-page `<script type="module">` blocks handle forms that need JSON payloads or redirects
+- No framework and no vendored libraries: pages load data with `fetch` and render JSON API responses into tables/selects via the shared `apiGet` / `renderRows` / `renderOptions` helpers in `js/app.js` (all interpolated values are HTML-escaped with `esc`)
+- `js/app.js` — ES module glue: session check via `GET /api/session`, role-based page guards and nav rendering, login/logout helpers, error toasts, 401 → `/login` redirect on API calls
+- Per-page `<script type="module">` blocks wire up forms, debounced search and semester filtering
 - Plain CSS split across `css/base.css` (tokens + reset), `css/layout.css` (topbar, nav, page shell), `css/components.css` (cards, buttons, forms, tables, toasts) and `css/helpers.css`; semantic class names, no build step
 
 ## Request chains (`cmd/server/app.go`)
@@ -38,9 +38,23 @@ professorOnly/adminOnly = protected + RoleRequired(...)
 
 ## Auth model
 
-- One JWT source (`auth.Login`); API clients use `Authorization: Bearer`, browsers get it in the `edu_token` cookie (`HttpOnly`, `SameSite=Lax`) set by `POST /api/login`
+- OIDC Authorization Code Flow via Microsoft Entra ID (`internal/auth/oidc_*.go`):
+  `GET /auth/login` redirects to Microsoft, `GET /auth/callback` verifies `state` + `nonce` + ID token (JWKS / `iss` / `aud` / `exp` via go-oidc) and links the directory `oid` claim to `ad_object_id` on a single `users` row
+- Known users (`ad_object_id` already present in the DB) receive a session JWT immediately; first-time users receive a 15-minute setup-scoped token (`scope=setup`) valid only on `/api/setup*`; `POST /api/setup` creates the `users` row with `role='student'` — session middleware rejects setup tokens and vice versa
+- Professors are pre-provisioned via SQL (their `ad_object_id` column must be populated); students self-register through the setup flow (`POST /api/setup` always creates a `role='student'` row)
+- One JWT source (`auth.IssueSessionToken`); API clients use `Authorization: Bearer`, browsers get it in the `edu_token` cookie (`HttpOnly`, `SameSite=Lax`)
 - Token extraction order: header first, cookie fallback (`internal/auth/jwt.go`)
+- Required env vars: `AD_CLIENT_ID`, `AD_TENANT_ID`, `AD_CLIENT_SECRET`, `AD_REDIRECT_URI` (redirect URI must match the app registration exactly); server fails fast at startup if any is missing or Entra discovery is unreachable
 - Unmatched paths return JSON 404 under `/api|/public|/admin`, otherwise the static `404.html`
+
+## Semester model
+
+- `semesters` table: `name` (unique), `is_current`, optional `start_date`/`end_date`. Seeded with
+  Spring/Summer/Fall 2025–2026 if the table is empty. `GET /api/semesters` lists them (current first).
+- `semester_courses.semester_id` → `semesters.id`. Offerings join `semesters` for the display name.
+- **Enrollment gating**: students may only enroll in offerings whose semester is the single
+  `is_current = true` row (`GetCurrent`). Creating offerings is not restricted to the current
+  semester, so professors can schedule ahead.
 
 ## Cross-site protection (`internal/web/sameorigin.go`)
 

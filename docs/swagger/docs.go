@@ -207,30 +207,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/login": {
-            "post": {
-                "description": "Authenticate with username and password, sets the session cookie and returns a JWT",
-                "consumes": [
-                    "application/json"
-                ],
+        "/api/departments": {
+            "get": {
+                "description": "Get all departments, seeding a default set when none exist",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "departments"
                 ],
-                "summary": "Log in",
-                "parameters": [
-                    {
-                        "description": "Credentials",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_auth.LoginRequest"
-                        }
-                    }
-                ],
+                "summary": "List departments",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -243,15 +229,18 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_auth.LoginResult"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_department.DepartmentData"
+                                            }
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/internal.ResponseBody"
                         }
@@ -376,9 +365,9 @@ const docTemplate = `{
                 "summary": "List semester course offerings",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Semester (e.g. Fall2026)",
-                        "name": "semester",
+                        "type": "integer",
+                        "description": "Semester ID",
+                        "name": "semester_id",
                         "in": "query",
                         "required": true
                     }
@@ -475,6 +464,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/semester-courses/{id}/enroll": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Enroll the authenticated student in a semester course offering. Rejects duplicate enrollment and schedule conflicts with courses the student is already enrolled in.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "Enroll in a course offering",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Semester course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_semestercourse.EnrollResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
         "/api/semesters": {
             "get": {
                 "security": [
@@ -482,12 +535,12 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all distinct semesters that have course offerings",
+                "description": "Get all semesters, with the current one flagged",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "semester-courses"
+                    "semesters"
                 ],
                 "summary": "List semesters",
                 "responses": {
@@ -504,7 +557,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "type": "string"
+                                                "$ref": "#/definitions/internal_semesters.SemesterData"
                                             }
                                         }
                                     }
@@ -543,6 +596,108 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/internal_auth.Claims"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/setup": {
+            "post": {
+                "description": "Create the Student account for the authenticated directory user and issue a session. Requires a setup token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Complete account setup",
+                "parameters": [
+                    {
+                        "description": "Account details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_auth.SetupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_auth.SetupResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/setup/context": {
+            "get": {
+                "description": "Prefill data (email, suggested name) for first-time account setup. Requires a setup token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Account setup context",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_auth.SetupContext"
                                         }
                                     }
                                 }
@@ -823,7 +978,19 @@ const docTemplate = `{
         "internal_auth.Claims": {
             "type": "object",
             "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "oid": {
+                    "type": "string"
+                },
                 "role": {
+                    "type": "string"
+                },
+                "scope": {
                     "type": "string"
                 },
                 "user_id": {
@@ -831,25 +998,39 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_auth.LoginRequest": {
+        "internal_auth.SetupContext": {
             "type": "object",
             "properties": {
-                "password": {
+                "email": {
                     "type": "string"
                 },
-                "username": {
+                "name": {
                     "type": "string"
                 }
             }
         },
-        "internal_auth.LoginResult": {
+        "internal_auth.SetupRequest": {
+            "type": "object",
+            "properties": {
+                "department_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "student_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_auth.SetupResult": {
             "type": "object",
             "properties": {
                 "role": {
                     "type": "string"
                 },
-                "token": {
-                    "type": "string"
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -870,6 +1051,17 @@ const docTemplate = `{
                 "course_code": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_department.DepartmentData": {
+            "type": "object",
+            "properties": {
                 "id": {
                     "type": "integer"
                 },
@@ -940,11 +1132,17 @@ const docTemplate = `{
                 "professor_name": {
                     "type": "string"
                 },
+                "schedule": {
+                    "type": "string"
+                },
                 "section": {
                     "type": "string"
                 },
                 "semester": {
                     "type": "string"
+                },
+                "semester_course_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -963,8 +1161,8 @@ const docTemplate = `{
                 "section": {
                     "type": "string"
                 },
-                "semester": {
-                    "type": "string"
+                "semester_id": {
+                    "type": "integer"
                 },
                 "taught_by": {
                     "type": "integer"
@@ -997,6 +1195,26 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_semestercourse.EnrollResponse": {
+            "type": "object",
+            "properties": {
+                "course_id": {
+                    "type": "integer"
+                },
+                "enrollment_id": {
+                    "type": "integer"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "string"
+                },
+                "semester_course_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_semestercourse.Schedule": {
             "type": "object",
             "properties": {
@@ -1011,16 +1229,39 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_semesters.SemesterData": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_current": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_student.StudentData": {
             "type": "object",
             "properties": {
                 "department_name": {
                     "type": "string"
                 },
-                "student_id": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 },
-                "username": {
+                "student_id": {
                     "type": "string"
                 }
             }
