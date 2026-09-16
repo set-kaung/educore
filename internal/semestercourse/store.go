@@ -7,6 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
+const scheduleAgg = "COALESCE(GROUP_CONCAT(CONCAT(scs.weekday, ' ', TIME_FORMAT(scs.start_time, '%H:%i'), '-', TIME_FORMAT(scs.end_time, '%H:%i')) ORDER BY scs.start_time, scs.end_time SEPARATOR ', '), '')"
+
+const offeringSelect = "sc.id as semester_course_id, c.name, c.course_code, sc.section, sem.name as semester, p.name as professor_name, " +
+	scheduleAgg + " as schedule"
+
+const offeringGroup = "sc.id, c.name, c.course_code, sc.section, sem.name, p.name"
+
+const scheduleJoin = "JOIN semester_course_schedules scs ON scs.semester_course_id = sc.id AND scs.deleted_at IS NULL"
+
 func createSemesterCourse(db *gorm.DB, sc internal.SemesterCourse) (internal.SemesterCourse, error) {
 	err := db.Create(&sc).Error
 	return sc, err
@@ -16,12 +25,21 @@ func createSchedule(db *gorm.DB, schedule internal.SemesterCourseSchedule) error
 	return db.Create(&schedule).Error
 }
 
-func HasConflict(db *gorm.DB, professorID uint, semester, weekday string, from, to time.Time) (bool, error) {
+func createEnrollment(db *gorm.DB, enrollment internal.Enrollment) (internal.Enrollment, error) {
+	err := db.Create(&enrollment).Error
+	return enrollment, err
+}
+
+func getSemesterCourse(db *gorm.DB, id uint) (internal.SemesterCourse, error) {
+	var sc internal.SemesterCourse
+	err := db.First(&sc, id).Error
+	return sc, err
+}
+
+func IsEnrolled(db *gorm.DB, studentID, semesterCourseID uint) (bool, error) {
 	var count int64
-	err := db.Table("semester_course_schedules as scs").
-		Joins("JOIN semester_courses sc ON sc.id = scs.semester_course_id").
-		Where("sc.semester = ? AND sc.taught_by = ? AND scs.weekday = ? AND scs.start_time < ? AND scs.end_time > ?",
-			semester, professorID, weekday, to, from).
+	err := db.Model(&internal.Enrollment{}).
+		Where("user_id = ? AND semester_course_id = ?", studentID, semesterCourseID).
 		Count(&count).Error
 	if err != nil {
 		return false, err
@@ -29,23 +47,45 @@ func HasConflict(db *gorm.DB, professorID uint, semester, weekday string, from, 
 	return count > 0, nil
 }
 
-func ListSemesters(db *gorm.DB) ([]string, error) {
-	var semesters []string
-	err := db.Model(&internal.SemesterCourse{}).
-		Distinct("semester").
-		Order("semester desc").
-		Pluck("semester", &semesters).Error
-	return semesters, err
+func HasStudentScheduleConflict(db *gorm.DB, studentID, semesterCourseID uint) (bool, error) {
+	var count int64
+	err := db.Table("semester_course_schedules as ts").
+		Joins("JOIN semester_courses tsc ON tsc.id = ts.semester_course_id AND tsc.deleted_at IS NULL").
+		Joins("JOIN enrollments e ON e.user_id = ? AND e.deleted_at IS NULL", studentID).
+		Joins("JOIN semester_courses esc ON esc.id = e.semester_course_id AND esc.semester_id = tsc.semester_id AND esc.id != tsc.id AND esc.deleted_at IS NULL").
+		Joins("JOIN semester_course_schedules es ON es.semester_course_id = esc.id AND es.weekday = ts.weekday AND es.start_time < ts.end_time AND es.end_time > ts.start_time AND es.deleted_at IS NULL").
+		Where("tsc.id = ? AND ts.deleted_at IS NULL", semesterCourseID).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
-func GetOfferingsBySemester(db *gorm.DB, semester string) ([]CourseOffering, error) {
+func HasConflict(db *gorm.DB, professorID, semesterID uint, weekday string, from, to time.Time) (bool, error) {
+	var count int64
+	err := db.Table("semester_course_schedules as scs").
+		Joins("JOIN semester_courses sc ON sc.id = scs.semester_course_id").
+		Where("sc.semester_id = ? AND sc.taught_by = ? AND scs.weekday = ? AND scs.start_time < ? AND scs.end_time > ?",
+			semesterID, professorID, weekday, to, from).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func GetOfferingsBySemester(db *gorm.DB, semesterID uint) ([]CourseOffering, error) {
 	var result []CourseOffering
 	err := db.
 		Table("semester_courses as sc").
-		Select("c.name, c.course_code, sc.section, sc.semester, p.name as professor_name").
+		Select(offeringSelect).
 		Joins("JOIN courses c ON c.id = sc.course_id").
-		Joins("JOIN professors p ON p.id = sc.taught_by").
-		Where("sc.semester = ?", semester).
+		Joins("JOIN semesters sem ON sem.id = sc.semester_id").
+		Joins("JOIN users p ON p.id = sc.taught_by").
+		Joins(scheduleJoin).
+		Where("sc.semester_id = ?", semesterID).
+		Group(offeringGroup).
 		Scan(&result).Error
 	if err != nil {
 		return nil, err
@@ -57,11 +97,51 @@ func GetEnrolledCourses(db *gorm.DB, studentID uint) ([]CourseOffering, error) {
 	var result []CourseOffering
 	err := db.
 		Table("enrollments as e").
-		Select("c.name, c.course_code, sc.section, sc.semester, p.name as professor_name").
+		Select(offeringSelect).
 		Joins("JOIN semester_courses sc ON sc.id = e.semester_course_id").
 		Joins("JOIN courses c ON c.id = sc.course_id").
-		Joins("JOIN professors p ON p.id = sc.taught_by").
-		Where("e.student_id = ? AND e.deleted_at IS NULL", studentID).
+		Joins("JOIN semesters sem ON sem.id = sc.semester_id").
+		Joins("JOIN users p ON p.id = sc.taught_by").
+		Joins(scheduleJoin).
+		Where("e.user_id = ? AND e.deleted_at IS NULL", studentID).
+		Group(offeringGroup).
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func GetOfferingDetail(db *gorm.DB, id uint) (*CourseOffering, error) {
+	var result CourseOffering
+	err := db.
+		Table("semester_courses as sc").
+		Select(offeringSelect).
+		Joins("JOIN courses c ON c.id = sc.course_id").
+		Joins("JOIN semesters sem ON sem.id = sc.semester_id").
+		Joins("JOIN users p ON p.id = sc.taught_by").
+		Joins(scheduleJoin).
+		Where("sc.id = ? AND sc.deleted_at IS NULL", id).
+		Group(offeringGroup).
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func GetTaughtCourses(db *gorm.DB, professorID uint) ([]CourseOffering, error) {
+	var result []CourseOffering
+	err := db.
+		Table("semester_courses as sc").
+		Select(offeringSelect).
+		Joins("JOIN courses c ON c.id = sc.course_id").
+		Joins("JOIN semesters sem ON sem.id = sc.semester_id").
+		Joins("JOIN users p ON p.id = sc.taught_by").
+		Joins(scheduleJoin).
+		Where("sc.taught_by = ? AND sc.deleted_at IS NULL", professorID).
+		Group(offeringGroup).
+		Order("sem.name DESC, c.name").
 		Scan(&result).Error
 	if err != nil {
 		return nil, err

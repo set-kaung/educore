@@ -2,6 +2,8 @@ package semestercourse
 
 import (
 	"educore/internal"
+	"educore/internal/semesters"
+	"errors"
 	"strings"
 	"time"
 
@@ -33,6 +35,13 @@ func parseTimeOfDay(s string) (time.Time, bool) {
 }
 
 func CreateSemesterCourse(db *gorm.DB, req CreateRequest) (CreateResponse, error) {
+	semester, err := semesters.GetByID(db, req.SemesterID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return CreateResponse{}, ErrInvalidSemester
+		}
+		return CreateResponse{}, err
+	}
 	parsedSchedules := make([]internal.SemesterCourseSchedule, 0, len(req.Schedules))
 
 	for _, sched := range req.Schedules {
@@ -55,7 +64,7 @@ func CreateSemesterCourse(db *gorm.DB, req CreateRequest) (CreateResponse, error
 			return CreateResponse{}, ErrInvalidScheduleTime
 		}
 
-		conflict, err := HasConflict(db, req.TeachBy, req.Semester, weekday, start, end)
+		conflict, err := HasConflict(db, req.TeachBy, req.SemesterID, weekday, start, end)
 		if err != nil {
 			return CreateResponse{}, err
 		}
@@ -72,10 +81,10 @@ func CreateSemesterCourse(db *gorm.DB, req CreateRequest) (CreateResponse, error
 	}
 
 	sc, err := createSemesterCourse(db, internal.SemesterCourse{
-		Semester: req.Semester,
-		CourseID: req.CourseID,
-		Section:  req.Section,
-		TeachBy:  req.TeachBy,
+		SemesterID: req.SemesterID,
+		CourseID:   req.CourseID,
+		Section:    req.Section,
+		TeachBy:    req.TeachBy,
 	})
 	if err != nil {
 		return CreateResponse{}, err
@@ -99,10 +108,63 @@ func CreateSemesterCourse(db *gorm.DB, req CreateRequest) (CreateResponse, error
 
 	return CreateResponse{
 		SemesterCourseID: sc.ID,
-		Semester:         sc.Semester,
+		Semester:         semester.Name,
 		CourseID:         sc.CourseID,
 		Section:          sc.Section,
 		TeachBy:          sc.TeachBy,
 		Schedules:        responseSchedules,
+	}, nil
+}
+
+func EnrollInSemesterCourse(db *gorm.DB, studentID, semesterCourseID uint) (EnrollResponse, error) {
+	sc, err := getSemesterCourse(db, semesterCourseID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return EnrollResponse{}, ErrSemesterCourseNotFound
+		}
+		return EnrollResponse{}, err
+	}
+
+	enrolled, err := IsEnrolled(db, studentID, semesterCourseID)
+	if err != nil {
+		return EnrollResponse{}, err
+	}
+	if enrolled {
+		return EnrollResponse{}, ErrAlreadyEnrolled
+	}
+
+	current, err := semesters.GetCurrent(db)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return EnrollResponse{}, ErrSemesterNotCurrent
+		}
+		return EnrollResponse{}, err
+	}
+	if sc.SemesterID != current.ID {
+		return EnrollResponse{}, ErrSemesterNotCurrent
+	}
+
+	conflict, err := HasStudentScheduleConflict(db, studentID, semesterCourseID)
+	if err != nil {
+		return EnrollResponse{}, err
+	}
+	if conflict {
+		return EnrollResponse{}, ErrEnrollmentConflict
+	}
+
+	enrollment, err := createEnrollment(db, internal.Enrollment{
+		UserID:           studentID,
+		SemesterCourseID: semesterCourseID,
+	})
+	if err != nil {
+		return EnrollResponse{}, err
+	}
+
+	return EnrollResponse{
+		EnrollmentID:     enrollment.ID,
+		SemesterCourseID: sc.ID,
+		Semester:         current.Name,
+		CourseID:         sc.CourseID,
+		Section:          sc.Section,
 	}, nil
 }
