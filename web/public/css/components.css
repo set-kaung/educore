@@ -160,6 +160,62 @@
     color: var(--muted);
 }
 
+/* Recommended reading books */
+.book-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.book-card + .book-card {
+    margin-top: 0;
+}
+
+.book-cover {
+    width: 3.75rem;
+    height: 5.625rem;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+}
+
+.book-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.book-card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.book-card-meta {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+}
+
+.book-cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 4.5rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    text-align: center;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
 .toast {
     max-width: 22rem;
     border: 1px solid var(--success-border);
@@ -187,4 +243,79 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--success-text);
+}
+
+/* Login */
+.login-card {
+    width: 100%;
+    max-width: 24rem;
+    padding: 3rem 2.5rem;
+}
+
+.login-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.login-subtitle {
+    margin-top: 0.625rem;
+    font-size: 1rem;
+    color: var(--muted);
+}
+
+.login-ad-btn {
+    margin-top: 2rem;
+    min-height: 2.75rem;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.login-ad-logo {
+    height: 1.25rem;
+    width: auto;
+}
+
+.login-hint {
+    margin-top: 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--muted);
+}
+
+/* Unauthorized redirect overlay */
+.auth-redirect {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(15 23 42 / 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.auth-redirect-card {
+    max-width: 22rem;
+    border: 1px solid rgb(220 38 38 / 0.3);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.auth-redirect-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--danger);
+}
+
+.auth-redirect-msg {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted);
 }

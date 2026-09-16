@@ -4,29 +4,31 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Log in · EduCore</title>
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/layout.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/helpers.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/helpers.css">
 </head>
 <body data-page="login">
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="/">EduCore</a>
+        <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="EduCore logo">EduCore</a>
         <nav id="nav" class="site-nav" hidden>
-            <a class="nav-link" href="/login" data-page="login" data-guest>Log in</a>
+            <a class="nav-link" href="login" data-page="login" data-guest>Log in</a>
         </nav>
     </div>
 </header>
 <main>
     <section class="center-page">
-        <div class="card w-full">
-            <h1 class="card-title">Log in</h1>
-            <p class="lede">Use your university account to sign in to EduCore.</p>
-            <a id="ad-login" class="btn btn-primary btn-block" href="/auth/login">Sign in with University Account</a>
+        <div class="card login-card">
+            <h1 class="login-title">Welcome to EduCore</h1>
+            <p class="login-subtitle">Sign in to manage your courses and enrollments.</p>
+            <a id="ad-login" class="btn btn-primary btn-block login-ad-btn" href="auth/login">
+                <img src="MS_Logo.jpg" alt="Microsoft" class="login-ad-logo"> Sign in with University Account
+            </a>
         </div>
     </section>
 </main>
-<script type="module" src="/js/login.js"></script>
+<script type="module" src="js/login.js"></script>
 </body>
 </html>

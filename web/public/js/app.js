@@ -10,7 +10,7 @@ export async function getSession(force = false) {
     return sessionCache.value;
   }
   try {
-    const res = await fetch("/api/session", { credentials: "same-origin" });
+    const res = await fetch("api/session", { credentials: "same-origin" });
     sessionCache.value = res.ok ? (await res.json()).data : null;
   } catch {
     sessionCache.value = null;
@@ -19,13 +19,13 @@ export async function getSession(force = false) {
 }
 
 export async function logout() {
-  await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
+  await fetch("api/logout", { method: "POST", credentials: "same-origin" });
   sessionCache.value = null;
 }
 
 export function homeFor(session) {
-  if (!session) return "/login";
-  return session.role === "student" ? "/my-courses" : "/students";
+  if (!session) return "login";
+  return session.role === "student" ? "my-courses" : "students";
 }
 
 function applyNav(session) {
@@ -50,16 +50,33 @@ function applyNav(session) {
     logoutBtn.hidden = !session;
     logoutBtn.onclick = async () => {
       await logout();
-      location.assign("/login");
+      location.assign("login");
     };
   }
 
   const current = document.body.dataset.page;
   for (const link of nav.querySelectorAll("[data-page]")) {
-    if (link.dataset.page === current) link.classList.add("nav-link-active");
+    if (link.dataset.page === current) {
+      link.classList.add("nav-link-active");
+      const dropdown = link.closest(".nav-dropdown");
+      if (dropdown) dropdown.classList.add("open");
+    }
   }
 
-  nav.hidden = false;
+  for (const btn of nav.querySelectorAll(".nav-dropdown-btn")) {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      btn.closest(".nav-dropdown").classList.toggle("open");
+    });
+  }
+
+  document.addEventListener("click", () => {
+    for (const dd of nav.querySelectorAll(".nav-dropdown.open")) {
+      dd.classList.remove("open");
+    }
+  });
+
+  requestAnimationFrame(() => { nav.hidden = false; });
 }
 
 export function showToast(message, isError = false) {
@@ -89,6 +106,20 @@ export function flash(message) {
   sessionStorage.setItem("edu_flash", message);
 }
 
+function redirectUnauthorized(href, message = "Unauthorized. Redirecting to login...") {
+  if (document.getElementById("auth-redirect")) return;
+  const overlay = document.createElement("div");
+  overlay.id = "auth-redirect";
+  overlay.className = "auth-redirect";
+  overlay.innerHTML = `
+  <div class="auth-redirect-card">
+    <p class="auth-redirect-title">Unauthorized</p>
+    <p class="auth-redirect-msg">${esc(message)}</p>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => location.replace(href), 1600);
+}
+
 function guardPage(session, options) {
   if (options.redirectHome) {
     location.replace(homeFor(session));
@@ -99,12 +130,12 @@ function guardPage(session, options) {
     return !session;
   }
   if (!session) {
-    location.replace("/login");
+    redirectUnauthorized("login");
     return false;
   }
   const required = options.require;
   if (required && !required.includes(session.role)) {
-    location.replace(homeFor(session));
+    redirectUnauthorized(homeFor(session), "This page is for " + required.join(" or ") + " accounts only. Redirecting...");
     return false;
   }
   return true;
@@ -134,7 +165,7 @@ export async function apiGet(url) {
     throw new Error("Network error.");
   }
   if (res.status === 401) {
-    location.assign("/login");
+    redirectUnauthorized("login");
     throw new Error("Unauthorized.");
   }
   const body = await res.json().catch(() => ({}));

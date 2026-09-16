@@ -4,21 +4,27 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Add Course · EduCore</title>
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/layout.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/helpers.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/helpers.css">
 </head>
 <body data-page="add-course">
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="/">EduCore</a>
+        <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="EduCore logo">EduCore</a>
         <nav id="nav" class="site-nav" hidden>
-            <a class="nav-link" href="/course-offerings" data-page="course-offerings">Course Offerings</a>
-            <a class="nav-link" href="/my-courses" data-page="my-courses" data-role="student">My Courses</a>
-            <a class="nav-link" href="/students" data-page="students" data-role="professor admin">Students</a>
-            <a class="nav-link" href="/add-course" data-page="add-course" data-role="professor admin">Add Course</a>
-            <a class="nav-link" href="/add-offering" data-page="add-offering" data-role="professor admin">Add Offering</a>
+            <a class="nav-link" href="course-offerings" data-page="course-offerings">Course Offerings</a>
+            <a class="nav-link" href="my-courses" data-page="my-courses" data-role="student">My Courses</a>
+            <a class="nav-link" href="students" data-page="students" data-role="professor admin">Students</a>
+            <div class="nav-dropdown" data-role="professor admin">
+                <button class="nav-dropdown-btn" type="button">Manage <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg></button>
+                <div class="nav-dropdown-menu">
+                    <a class="nav-dropdown-item" href="add-course" data-page="add-course">Add Course</a>
+                    <a class="nav-dropdown-item" href="add-offering" data-page="add-offering">Add Offering</a>
+                    <a class="nav-dropdown-item" href="recommended-books" data-page="recommended-books">Recommended Books</a>
+                </div>
+            </div>
         </nav>
         <div class="user-menu">
             <span id="role-badge" class="role-badge" hidden></span>
@@ -63,6 +69,6 @@
         </tbody>
     </table>
 </main>
-<script type="module" src="/js/add-course.js"></script>
+<script type="module" src="js/add-course.js"></script>
 </body>
 </html>

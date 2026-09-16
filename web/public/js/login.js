@@ -1,3 +1,3 @@
-import { initPage } from "/js/app.js";
+import { initPage } from "./app.js";
 
 await initPage({ guestOnly: true });

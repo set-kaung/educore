@@ -1,4 +1,4 @@
-import { initPage, apiGet, showToast, esc, updateCount } from "/js/app.js";
+import { initPage, apiGet, showToast, esc, updateCount } from "./app.js";
 
 const session = await initPage({});
 const isStudent = session?.role === "student";
@@ -15,7 +15,7 @@ const enrolledIds = new Set();
 async function loadEnrolled() {
     if (!isStudent) return;
     try {
-        const data = await apiGet("/api/my/courses");
+        const data = await apiGet("api/my/courses");
         for (const row of data) {
             enrolledIds.add(row.semester_course_id);
         }
@@ -27,7 +27,7 @@ function rowHtml(row) {
         ? '<span class="enrolled-tag">Enrolled</span>'
         : `<button type="button" class="btn btn-primary" data-enroll="${row.semester_course_id}">Enroll</button>`;
     return `<tr>
-        <td>${esc(row.name)}</td>
+        <td><a class="nav-link" href="offering-detail?id=${row.semester_course_id}">${esc(row.name)}</a></td>
         <td>${esc(row.course_code)}</td>
         <td>${esc(row.section)}</td>
         <td>${esc(row.professor_name)}</td>
@@ -38,7 +38,7 @@ function rowHtml(row) {
 
 async function loadOfferings() {
     try {
-        const data = await apiGet(`/api/semester-courses?semester_id=${encodeURIComponent(select.value)}`);
+        const data = await apiGet(`api/semester-courses?semester_id=${encodeURIComponent(select.value)}`);
         if (!data.length) {
             tbody.innerHTML = `<tr><td colspan="6" class="empty-row">No offerings for this semester yet.</td></tr>`;
         } else {
@@ -50,7 +50,7 @@ async function loadOfferings() {
 
 async function loadSemesters() {
     try {
-        const semesters = await apiGet("/api/semesters");
+        const semesters = await apiGet("api/semesters");
         if (semesters.length) {
             select.innerHTML = "";
             let current = semesters[0];
@@ -74,7 +74,7 @@ tbody.addEventListener("click", async (event) => {
     btn.disabled = true;
 
     try {
-        const res = await fetch(`/api/semester-courses/${btn.dataset.enroll}/enroll`, {
+        const res = await fetch(`api/semester-courses/${btn.dataset.enroll}/enroll`, {
             method: "POST",
             credentials: "same-origin",
         });

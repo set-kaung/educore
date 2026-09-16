@@ -1,4 +1,4 @@
-import { initPage, flash, apiGet, renderOptions } from "/js/app.js";
+import { initPage, flash, apiGet, renderOptions } from "./app.js";
 
 await initPage({ require: ["professor", "admin"] });
 
@@ -12,7 +12,7 @@ const semesterSelect = document.getElementById("semester_id");
 
 async function loadSelects() {
     try {
-        const semesters = await apiGet("/api/semesters");
+        const semesters = await apiGet("api/semesters");
         renderOptions(semesterSelect, semesters, {
             value: (semester) => semester.id,
             label: (semester) => semester.name,
@@ -20,7 +20,7 @@ async function loadSelects() {
         });
     } catch {}
     try {
-        const courses = await apiGet("/api/courses");
+        const courses = await apiGet("api/courses");
         renderOptions(courseSelect, courses, {
             value: (course) => course.id,
             label: (course) => `${course.name} (${course.course_code})`,
@@ -28,7 +28,7 @@ async function loadSelects() {
         });
     } catch {}
     try {
-        const professors = await apiGet("/api/professors");
+        const professors = await apiGet("api/professors");
         renderOptions(professorSelect, professors, {
             value: (professor) => professor.id,
             label: (professor) => professor.name,
@@ -77,7 +77,7 @@ form.addEventListener("submit", async (event) => {
     errorBox.hidden = true;
 
     try {
-        const res = await fetch("/api/semester-courses", {
+        const res = await fetch("api/semester-courses", {
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
@@ -93,7 +93,7 @@ form.addEventListener("submit", async (event) => {
         if (!res.ok) throw new Error(body.message || "Could not create the course offering.");
 
         flash(`Course offering created for ${body.data.semester}.`);
-        location.assign("/course-offerings");
+        location.assign("course-offerings");
     } catch (err) {
         errorBox.textContent = err.message;
         errorBox.hidden = false;

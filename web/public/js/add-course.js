@@ -1,4 +1,4 @@
-import { initPage, flash, apiGet, renderRows, updateCount } from "/js/app.js";
+import { initPage, flash, apiGet, renderRows, updateCount } from "./app.js";
 
 await initPage({ require: ["professor", "admin"] });
 
@@ -9,7 +9,7 @@ const count = document.getElementById("course-count");
 
 async function loadCourses() {
     try {
-        const data = await apiGet("/api/courses");
+        const data = await apiGet("api/courses");
         renderRows(tbody, data, {
             columns: ["name", "course_code"],
             empty: "No courses yet.",
@@ -24,7 +24,7 @@ form.addEventListener("submit", async (event) => {
     errorBox.hidden = true;
 
     try {
-        const res = await fetch("/api/courses", {
+        const res = await fetch("api/courses", {
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },

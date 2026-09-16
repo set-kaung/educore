@@ -1,4 +1,4 @@
-import { apiGet } from "/js/app.js";
+import { apiGet } from "./app.js";
 
 const form = document.getElementById("setup-form");
 const errorBox = document.getElementById("setup-error");
@@ -8,7 +8,7 @@ const studentIdInput = document.getElementById("student_id");
 
 let context = { email: "", name: "" };
 try {
-    context = await apiGet("/api/setup/context");
+    context = await apiGet("api/setup/context");
 } catch {}
 
 if (context.email) {
@@ -24,7 +24,7 @@ if (localPart && /^\d+$/.test(localPart)) {
 }
 
 try {
-    const departments = await apiGet("/api/departments");
+    const departments = await apiGet("api/departments");
     if (departments.length) {
         departmentSelect.innerHTML = "";
         for (const department of departments) {
@@ -42,7 +42,7 @@ form.addEventListener("submit", async (event) => {
     errorBox.hidden = true;
 
     try {
-        const res = await fetch("/api/setup", {
+        const res = await fetch("api/setup", {
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ form.addEventListener("submit", async (event) => {
         if (!res.ok) {
             throw new Error(body.message || "Setup failed.");
         }
-        location.assign("/");
+        location.assign("./");
     } catch (err) {
         errorBox.textContent = err.message;
         errorBox.hidden = false;

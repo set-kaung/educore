@@ -17,10 +17,19 @@
 }
 
 .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text);
     text-decoration: none;
+}
+
+.brand-logo {
+    height: 1.75rem;
+    width: auto;
+    display: block;
 }
 
 .site-nav {
@@ -45,6 +54,79 @@
 }
 
 .nav-link-active {
+    background: rgb(37 99 235 / 0.1);
+    color: var(--brand);
+}
+
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.nav-dropdown-btn:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.nav-dropdown-btn svg {
+    width: 0.75rem;
+    height: 0.75rem;
+    transition: transform 0.15s ease;
+}
+
+.nav-dropdown.open .nav-dropdown-btn svg {
+    transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 10rem;
+    margin-top: 0.25rem;
+    padding: 0.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    z-index: 100;
+}
+
+.nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+}
+
+.nav-dropdown-item {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-dropdown-item:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.nav-dropdown-item-active {
     background: rgb(37 99 235 / 0.1);
     color: var(--brand);
 }
