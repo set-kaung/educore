@@ -3,8 +3,10 @@ package openlibrary
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const baseURL = "https://openlibrary.org"
@@ -29,7 +31,10 @@ type Client struct {
 }
 
 func NewClient(userAgent string) *Client {
-	return &Client{http: &http.Client{}, userAgent: userAgent}
+	return &Client{
+		http:      &http.Client{Timeout: 10 * time.Second},
+		userAgent: userAgent,
+	}
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
@@ -41,20 +46,48 @@ func (c *Client) Search(query string) (SearchResult, error) {
 	u, _ := url.Parse(baseURL + "/search.json")
 	u.RawQuery = url.Values{"q": {query}}.Encode()
 
-	req, err := http.NewRequest("GET", u.String(), nil)
-	if err != nil {
-		return SearchResult{}, fmt.Errorf("openlibrary request failed: %w", err)
-	}
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		req, err := http.NewRequest("GET", u.String(), nil)
+		if err != nil {
+			return SearchResult{}, fmt.Errorf("openlibrary request failed: %w", err)
+		}
 
-	resp, err := c.do(req)
-	if err != nil {
-		return SearchResult{}, fmt.Errorf("openlibrary request failed: %w", err)
-	}
-	defer resp.Body.Close()
+		resp, err := c.do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("openlibrary request failed: %w", err)
+			if attempt == 0 {
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
+			return SearchResult{}, lastErr
+		}
 
-	var result SearchResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return SearchResult{}, fmt.Errorf("openlibrary decode failed: %w", err)
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = fmt.Errorf("openlibrary read body failed: %w", err)
+			if attempt == 0 {
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
+			return SearchResult{}, lastErr
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("openlibrary returned status %d: %s", resp.StatusCode, string(body))
+			if attempt == 0 {
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
+			return SearchResult{}, lastErr
+		}
+
+		var result SearchResult
+		if err := json.Unmarshal(body, &result); err != nil {
+			return SearchResult{}, fmt.Errorf("openlibrary decode failed: %w", err)
+		}
+		return result, nil
 	}
-	return result, nil
+	return SearchResult{}, lastErr
 }
