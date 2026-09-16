@@ -36,7 +36,9 @@ func sameSite(r *http.Request) bool {
 	}
 
 	scheme := "http"
-	if r.TLS != nil {
+	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" {
+		scheme = xfp
+	} else if r.TLS != nil {
 		scheme = "https"
 	}
 	host := r.Host
