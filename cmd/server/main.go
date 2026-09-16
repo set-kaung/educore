@@ -45,17 +45,53 @@ func main() {
 		return
 	}
 
+	adClientID := os.Getenv("AD_CLIENT_ID")
+	if adClientID == "" {
+		slog.Error("failed to start server",
+			"reason", "AD_CLIENT_ID environment variable is empty",
+		)
+		return
+	}
+
+	adTenantID := os.Getenv("AD_TENANT_ID")
+	if adTenantID == "" {
+		slog.Error("failed to start server",
+			"reason", "AD_TENANT_ID environment variable is empty",
+		)
+		return
+	}
+
+	adClientSecret := os.Getenv("AD_CLIENT_SECRET")
+	if adClientSecret == "" {
+		slog.Error("failed to start server",
+			"reason", "AD_CLIENT_SECRET environment variable is empty",
+		)
+		return
+	}
+
+	adRedirectURI := os.Getenv("AD_REDIRECT_URI")
+	if adRedirectURI == "" {
+		slog.Error("failed to start server",
+			"reason", "AD_REDIRECT_URI environment variable is empty",
+		)
+		return
+	}
+
 	staticDir := os.Getenv("STATIC_DIR")
 	if staticDir == "" {
 		staticDir = "web/public"
 	}
 
 	conf := Config{
-		DSN:         dsn,
-		JWTSecret:   jwtSecret,
-		AuthType:    os.Getenv("AUTH_TYPE"),
-		OLUserAgent: os.Getenv("OPENLIBRARY_USER_AGENT"),
-		StaticDir:   staticDir,
+		DSN:            dsn,
+		JWTSecret:      jwtSecret,
+		OLUserAgent:    os.Getenv("OPENLIBRARY_USER_AGENT"),
+		StaticDir:      staticDir,
+		BasePath:       os.Getenv("BASE_PATH"),
+		ADClientID:     adClientID,
+		ADTenantID:     adTenantID,
+		ADClientSecret: adClientSecret,
+		ADRedirectURI:  adRedirectURI,
 	}
 
 	mux, err := Setup(conf)
