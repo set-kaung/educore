@@ -3,3 +3,5 @@ educore
 node_modules/
 server
 .DS_Store
+AGENTS.md
+app_linux

@@ -22,9 +22,9 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       PORT: "8080"
+      BASE_PATH: "/educore"
       DATABASE_URL: "root:root@tcp(db:3306)/educore?parseTime=true"
       JWT_SECRET: "secret123"
-      AUTH_TYPE: "mock"
     depends_on:
       db:
         condition: service_healthy
