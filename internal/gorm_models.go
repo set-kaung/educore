@@ -33,7 +33,7 @@ type Enrollment struct {
 
 type Semester struct {
 	gorm.Model
-	Name      string     `gorm:"column:name;not null;uniqueIndex"`
+	Name      string     `gorm:"column:name;type:varchar(255);not null;uniqueIndex"`
 	IsCurrent bool       `gorm:"column:is_current;not null;default:false"`
 	StartDate *time.Time `gorm:"column:start_date"`
 	EndDate   *time.Time `gorm:"column:end_date"`
@@ -79,6 +79,17 @@ type Department struct {
 	Name string `gorm:"column:name;type:varchar(255);not null,uniqueIndex"`
 }
 
+type RecommendedBook struct {
+	gorm.Model
+	SemesterCourseID uint   `gorm:"column:semester_course_id;type:bigint unsigned;not null;constraint:OnDelete:CASCADE;uniqueIndex:idx_semester_book"`
+	Title            string `gorm:"column:title;not null"`
+	Author           string `gorm:"column:author"`
+	Isbn             string `gorm:"column:isbn"`
+	CoverI           int    `gorm:"column:cover_i"`
+	OpenLibraryKey   string `gorm:"column:open_library_key;type:varchar(255);uniqueIndex:idx_semester_book"`
+	SemesterCourse   SemesterCourse
+}
+
 type SupportTicket struct {
 	gorm.Model
 	UserID  uint   `gorm:"column:user_id;type:bigint unsigned;not null"`
@@ -97,4 +108,5 @@ var Models = []interface{}{
 	&ApiKey{},
 	&Department{},
 	&SupportTicket{},
+	&RecommendedBook{},
 }
