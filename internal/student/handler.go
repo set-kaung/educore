@@ -53,7 +53,7 @@ func FilterStudents(students []StudentData, query string) []StudentData {
 
 func matches(s StudentData, query string) bool {
 	for _, term := range strings.Fields(strings.ToLower(query)) {
-		if !containsAny(term, s.Username, s.StudentID, s.DepartmentName) {
+		if !containsAny(term, s.Name, s.StudentID, s.DepartmentName) {
 			return false
 		}
 	}

@@ -1,7 +1,8 @@
 package student
 
 type StudentData struct {
-	Username       string `json:"username"`
+	ID             uint   `json:"id"`
+	Name           string `json:"name"`
 	StudentID      string `json:"student_id"`
 	DepartmentName string `json:"department_name"`
 }
