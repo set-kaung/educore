@@ -1,11 +1,16 @@
 package auth
 
 import (
-	"educore/internal"
+	"log/slog"
 	"net/http"
+	"strings"
+
+	"educore/internal"
 )
 
-type AuthHandler struct{}
+type AuthHandler struct {
+	BasePath string
+}
 
 // HandleLogout godoc
 // @Summary      Log out
@@ -15,9 +20,31 @@ type AuthHandler struct{}
 // @Success      200  {object}  internal.ResponseBody
 // @Router       /api/logout [post]
 func (ah AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
-	ClearTokenCookie(w)
+	cookiePath := CookiePath(ah.BasePath)
+
+	ClearTokenCookie(w, r, cookiePath)
+	if cookiePath != "/" {
+		ClearTokenCookie(w, r, "/")
+	}
 	internal.WriteData(w, "logged out", nil, nil)
 	return nil
+}
+
+// cookieOccurrences counts how many times a cookie name (e.g. "edu_token=")
+// appears in a Cookie header. Multiple occurrences mean the browser holds
+// the same-named cookie under different Path/Domain scopes.
+func cookieOccurrences(header, name string) int {
+	if header == "" {
+		return 0
+	}
+	count := 0
+	for _, part := range strings.Split(header, ";") {
+		kv := strings.TrimSpace(part)
+		if strings.HasPrefix(kv, name+"=") {
+			count++
+		}
+	}
+	return count
 }
 
 // HandleSession godoc
@@ -31,6 +58,8 @@ func (ah AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) *inte
 // @Router       /api/session [get]
 func (ah AuthHandler) HandleSession(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
 	claims := GetClaims(r)
+	count := cookieOccurrences(r.Header.Get("Cookie"), TokenCookie)
+	slog.Info("session", "method", r.Method, "path", r.URL.Path, "tokenCookieCount", count, "userID", claims.UserID, "role", claims.Role)
 	internal.WriteData(w, "", claims, nil)
 	return nil
 }

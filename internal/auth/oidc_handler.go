@@ -25,6 +25,15 @@ type OIDCHandler struct {
 	Provider  *OIDCProvider
 	DB        *gorm.DB
 	JWTSecret string
+	BasePath  string
+}
+
+// appPath prefixes a root-relative path with the deployment base path.
+func (h *OIDCHandler) appPath(p string) string {
+	if h.BasePath == "" {
+		return p
+	}
+	return strings.TrimSuffix(h.BasePath, "/") + p
 }
 
 type adClaims struct {
@@ -36,6 +45,8 @@ type adClaims struct {
 }
 
 func (h *OIDCHandler) HandleADLogin(w http.ResponseWriter, r *http.Request) {
+	cookiePath := CookiePath(h.BasePath)
+	slog.Info("ad login", "method", r.Method, "path", r.URL.Path, "cookiePath", cookiePath)
 	state, err := randomHex()
 	if err != nil {
 		http.Error(w, "could not start sign-in", http.StatusInternalServerError)
@@ -47,19 +58,20 @@ func (h *OIDCHandler) HandleADLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setOAuthCookie(w, r, stateCookie, state)
-	setOAuthCookie(w, r, nonceCookie, nonce)
+	setOAuthCookie(w, r, stateCookie, state, cookiePath)
+	setOAuthCookie(w, r, nonceCookie, nonce, cookiePath)
 
 	http.Redirect(w, r, h.Provider.AuthCodeURL(state, nonce), http.StatusSeeOther)
 }
 
 func (h *OIDCHandler) HandleADCallback(w http.ResponseWriter, r *http.Request) {
-	clearOAuthCookie(w, r, stateCookie)
-	clearOAuthCookie(w, r, nonceCookie)
+	slog.Info("ad callback", "method", r.Method, "path", r.URL.Path, "hasStateCookie", cookiePresent(r, stateCookie), "hasNonceCookie", cookiePresent(r, nonceCookie))
+	clearOAuthCookie(w, r, stateCookie, CookiePath(h.BasePath))
+	clearOAuthCookie(w, r, nonceCookie, CookiePath(h.BasePath))
 
 	if msg := r.URL.Query().Get("error"); msg != "" {
 		slog.Warn("oidc authorization failed", "error", msg, "description", r.URL.Query().Get("error_description"))
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, h.appPath("/login"), http.StatusSeeOther)
 		return
 	}
 
@@ -142,9 +154,9 @@ func (h *OIDCHandler) HandleADCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not complete sign-in", http.StatusInternalServerError)
 		return
 	}
-	setSetupTokenCookie(w, r, setupToken)
+	setSetupTokenCookie(w, r, setupToken, CookiePath(h.BasePath))
 
-	http.Redirect(w, r, "/setup", http.StatusSeeOther)
+	http.Redirect(w, r, h.appPath("/setup"), http.StatusSeeOther)
 }
 
 // HandleSetupContext godoc
@@ -225,12 +237,13 @@ func (h *OIDCHandler) HandleSetup(w http.ResponseWriter, r *http.Request) *inter
 }
 
 func (h *OIDCHandler) finishSignIn(w http.ResponseWriter, r *http.Request, userID uint, role string) {
+	slog.Info("finish sign-in", "userID", userID, "role", role, "cookiePath", CookiePath(h.BasePath), "redirect", h.appPath("/"))
 	if err := h.issueSession(w, r, userID, role); err != nil {
 		slog.Error("could not issue session token", "error", err)
 		http.Error(w, "could not complete sign-in", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, h.appPath("/"), http.StatusSeeOther)
 }
 
 func (h *OIDCHandler) issueSession(w http.ResponseWriter, r *http.Request, userID uint, role string) error {
@@ -238,7 +251,9 @@ func (h *OIDCHandler) issueSession(w http.ResponseWriter, r *http.Request, userI
 	if err != nil {
 		return err
 	}
-	SetTokenCookie(w, r, token)
+	cookiePath := CookiePath(h.BasePath)
+	slog.Info("issue session", "userID", userID, "role", role, "setCookiePath", cookiePath)
+	SetTokenCookie(w, r, token, cookiePath)
 	return nil
 }
 
@@ -250,38 +265,43 @@ func randomHex() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-func setOAuthCookie(w http.ResponseWriter, r *http.Request, name, value string) {
+func cookiePresent(r *http.Request, name string) bool {
+	_, err := r.Cookie(name)
+	return err == nil
+}
+
+func setOAuthCookie(w http.ResponseWriter, r *http.Request, name, value, cookiePath string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
-		Path:     "/",
+		Path:     cookiePath,
 		MaxAge:   int(oauthCookieTTL.Seconds()),
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   IsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func clearOAuthCookie(w http.ResponseWriter, r *http.Request, name string) {
+func clearOAuthCookie(w http.ResponseWriter, r *http.Request, name, cookiePath string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    "",
-		Path:     "/",
+		Path:     cookiePath,
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   IsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func setSetupTokenCookie(w http.ResponseWriter, r *http.Request, token string) {
+func setSetupTokenCookie(w http.ResponseWriter, r *http.Request, token, cookiePath string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     TokenCookie,
 		Value:    token,
-		Path:     "/",
+		Path:     cookiePath,
 		MaxAge:   int(setupTokenTTL.Seconds()),
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   IsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 	})
 }
