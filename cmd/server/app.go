@@ -55,6 +55,8 @@ func Setup(conf Config) (http.Handler, error) {
 	jwtAuth := auth.NewJWTAuth(conf.JWTSecret)
 
 	protected := api.Append(jwtAuth.Middleware())
+
+	
 	professorOnly := protected.Append(RoleRequired("professor", "admin"))
 	adminOnly := protected.Append(RoleRequired("admin"))
 	studentOnly := protected.Append(RoleRequired("student"))

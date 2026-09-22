@@ -46,7 +46,6 @@ type adClaims struct {
 
 func (h *OIDCHandler) HandleADLogin(w http.ResponseWriter, r *http.Request) {
 	cookiePath := CookiePath(h.BasePath)
-	slog.Info("ad login", "method", r.Method, "path", r.URL.Path, "cookiePath", cookiePath)
 	state, err := randomHex()
 	if err != nil {
 		http.Error(w, "could not start sign-in", http.StatusInternalServerError)
@@ -65,7 +64,6 @@ func (h *OIDCHandler) HandleADLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OIDCHandler) HandleADCallback(w http.ResponseWriter, r *http.Request) {
-	slog.Info("ad callback", "method", r.Method, "path", r.URL.Path, "hasStateCookie", cookiePresent(r, stateCookie), "hasNonceCookie", cookiePresent(r, nonceCookie))
 	clearOAuthCookie(w, r, stateCookie, CookiePath(h.BasePath))
 	clearOAuthCookie(w, r, nonceCookie, CookiePath(h.BasePath))
 
