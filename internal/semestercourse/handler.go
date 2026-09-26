@@ -149,6 +149,34 @@ func (h *Handler) HandleCreate(w http.ResponseWriter, r *http.Request) *internal
 	return nil
 }
 
+// HandleDelete godoc
+// @Summary      Delete a course offering
+// @Description  Soft-delete a semester course offering. Professor only.
+// @Tags         semester-courses
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Semester course ID"
+// @Success      200  {object}  internal.ResponseBody
+// @Failure      400  {object}  internal.ResponseBody
+// @Failure      404  {object}  internal.ResponseBody
+// @Router       /api/semester-courses/{id} [delete]
+func (h *Handler) HandleDelete(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	id, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
+	if err != nil || id == 0 {
+		return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid semester course id", Err: nil}
+	}
+
+	if err := DeleteSemesterCourse(h.db, uint(id)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &internal.HTTPError{StatusCode: http.StatusNotFound, Message: "course offering not found", Err: err}
+		}
+		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "could not delete course offering", Err: err}
+	}
+
+	internal.WriteData(w, "course offering deleted", nil, nil)
+	return nil
+}
+
 // HandleEnroll godoc
 // @Summary      Enroll in a course offering
 // @Description  Enroll the authenticated student in a semester course offering. Rejects duplicate enrollment and schedule conflicts with courses the student is already enrolled in.

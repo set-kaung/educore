@@ -115,10 +115,12 @@ func Setup(conf Config) (http.Handler, error) {
 	mux.Handle("GET /api/students", professorOnly.Chain(internal.HandlerFunc(sh.HandleGetAllStudents)))
 	mux.Handle("GET /api/courses", protected.Chain(internal.HandlerFunc(ch.HandleListCourses)))
 	mux.Handle("POST /api/courses", professorOnly.Chain(internal.HandlerFunc(ch.HandleCreateCourse)))
+	mux.Handle("DELETE /api/courses/{id}", professorOnly.Chain(internal.HandlerFunc(ch.HandleDeleteCourse)))
 	mux.Handle("GET /api/professors", protected.Chain(internal.HandlerFunc(prh.HandleListProfessors)))
 	mux.Handle("GET /api/semester-courses", protected.Chain(internal.HandlerFunc(sch.HandleGetBySemester)))
 	mux.Handle("GET /api/semester-courses/{id}", protected.Chain(internal.HandlerFunc(sch.HandleGetDetail)))
 	mux.Handle("POST /api/semester-courses", professorOnly.Chain(internal.HandlerFunc(sch.HandleCreate)))
+	mux.Handle("DELETE /api/semester-courses/{id}", professorOnly.Chain(internal.HandlerFunc(sch.HandleDelete)))
 	mux.Handle("POST /api/semester-courses/{id}/enroll", studentOnly.Chain(internal.HandlerFunc(sch.HandleEnroll)))
 
 	mux.Handle("GET /api/semester-courses/{id}/books", protected.Chain(internal.HandlerFunc(rbh.HandleList)))

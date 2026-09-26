@@ -63,6 +63,21 @@
     width: 100%;
 }
 
+.btn-sm {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem;
+}
+
+.btn-danger {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #ffffff;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.9);
+}
+
 .field-label {
     display: block;
     margin-bottom: 0.25rem;

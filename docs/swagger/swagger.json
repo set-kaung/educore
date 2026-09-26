@@ -108,6 +108,52 @@
                 }
             }
         },
+        "/api/books/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Professor removes a recommended book from their course offering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recommended-books"
+                ],
+                "summary": "Remove a recommended book",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Recommended book ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
         "/api/courses": {
             "get": {
                 "security": [
@@ -203,6 +249,52 @@
                 }
             }
         },
+        "/api/courses/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a course listing. Professor only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "courses"
+                ],
+                "summary": "Delete a course listing",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
         "/api/departments": {
             "get": {
                 "description": "Get all departments, seeding a default set when none exist",
@@ -279,6 +371,46 @@
                     "semester-courses"
                 ],
                 "summary": "List the authenticated student's enrolled courses",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_semestercourse.CourseOffering"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/my/taught-courses": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all course offerings the current professor teaches",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "List the authenticated professor's taught courses",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -447,6 +579,237 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/semester-courses/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a specific semester course offering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "Get a single course offering",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Semester course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_semestercourse.CourseOffering"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a semester course offering. Professor only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "semester-courses"
+                ],
+                "summary": "Delete a course offering",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Semester course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/semester-courses/{id}/books": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all books a professor has recommended for the given semester course",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recommended-books"
+                ],
+                "summary": "List recommended books for a course offering",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Semester course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_recommendedbook.Book"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Professor adds a book to their course offering's recommended reading list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recommended-books"
+                ],
+                "summary": "Add a recommended book to a course offering",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Semester course ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Book details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_recommendedbook.AddRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/internal.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_recommendedbook.Book"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal.ResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/internal.ResponseBody"
                         }
@@ -1112,6 +1475,52 @@
                     "type": "boolean"
                 },
                 "student_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_recommendedbook.AddRequest": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "cover_i": {
+                    "type": "integer"
+                },
+                "isbn": {
+                    "type": "string"
+                },
+                "open_library_key": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_recommendedbook.Book": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "cover_i": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isbn": {
+                    "type": "string"
+                },
+                "open_library_key": {
+                    "type": "string"
+                },
+                "semester_course_id": {
+                    "type": "integer"
+                },
+                "title": {
                     "type": "string"
                 }
             }

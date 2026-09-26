@@ -3,7 +3,9 @@ package course
 import (
 	"educore/internal"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -65,5 +67,33 @@ func (h *CourseHandler) HandleCreateCourse(w http.ResponseWriter, r *http.Reques
 	}
 
 	internal.WriteData(w, "", ToCourseResponse(c), nil)
+	return nil
+}
+
+// HandleDeleteCourse godoc
+// @Summary      Delete a course listing
+// @Description  Soft-delete a course listing. Professor only.
+// @Tags         courses
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Course ID"
+// @Success      200  {object}  internal.ResponseBody
+// @Failure      400  {object}  internal.ResponseBody
+// @Failure      404  {object}  internal.ResponseBody
+// @Router       /api/courses/{id} [delete]
+func (h *CourseHandler) HandleDeleteCourse(w http.ResponseWriter, r *http.Request) *internal.HTTPError {
+	id, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
+	if err != nil || id == 0 {
+		return &internal.HTTPError{StatusCode: http.StatusBadRequest, Message: "invalid course id", Err: nil}
+	}
+
+	if err := DeleteCourse(h.db, uint(id)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &internal.HTTPError{StatusCode: http.StatusNotFound, Message: "course not found", Err: err}
+		}
+		return &internal.HTTPError{StatusCode: http.StatusInternalServerError, Message: "could not delete course", Err: err}
+	}
+
+	internal.WriteData(w, "course deleted", nil, nil)
 	return nil
 }

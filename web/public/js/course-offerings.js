@@ -2,13 +2,16 @@ import { initPage, apiGet, showToast, esc, updateCount } from "./app.js";
 
 const session = await initPage({});
 const isStudent = session?.role === "student";
+const isStaff = session?.role === "professor" || session?.role === "admin";
 
 const select = document.getElementById("semester");
 const tbody = document.getElementById("offering-rows");
 const count = document.getElementById("offering-count");
 const enrollCol = document.getElementById("enroll-col");
+const actionCol = document.getElementById("action-col");
 
 if (isStudent) enrollCol.hidden = false;
+if (isStaff) actionCol.hidden = false;
 
 const enrolledIds = new Set();
 
@@ -26,13 +29,17 @@ function rowHtml(row) {
     const action = enrolledIds.has(row.semester_course_id)
         ? '<span class="enrolled-tag">Enrolled</span>'
         : `<button type="button" class="btn btn-primary" data-enroll="${row.semester_course_id}">Enroll</button>`;
+    const actions = isStaff
+        ? `<button type="button" class="btn btn-danger btn-sm" data-delete-offering="${row.semester_course_id}">Delete</button>`
+        : "";
+    const lastCol = isStudent ? `<td>${action}</td>` : (isStaff ? `<td>${actions}</td>` : "");
     return `<tr>
         <td><a class="nav-link" href="offering-detail?id=${row.semester_course_id}">${esc(row.name)}</a></td>
         <td>${esc(row.course_code)}</td>
         <td>${esc(row.section)}</td>
         <td>${esc(row.professor_name)}</td>
         <td>${esc(row.schedule)}</td>
-        ${isStudent ? `<td>${action}</td>` : ""}
+        ${lastCol}
     </tr>`;
 }
 
@@ -69,27 +76,54 @@ async function loadSemesters() {
 }
 
 tbody.addEventListener("click", async (event) => {
-    const btn = event.target.closest("[data-enroll]");
-    if (!btn) return;
-    btn.disabled = true;
+    const enrollBtn = event.target.closest("[data-enroll]");
+    if (enrollBtn) {
+        enrollBtn.disabled = true;
 
+        try {
+            const res = await fetch(`api/semester-courses/${enrollBtn.dataset.enroll}/enroll`, {
+                method: "POST",
+                credentials: "same-origin",
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast(body.message || "Enrollment failed.", true);
+                enrollBtn.disabled = false;
+                return;
+            }
+            enrolledIds.add(Number(enrollBtn.dataset.enroll));
+            showToast(`Enrolled in ${enrollBtn.closest("tr").cells[0].textContent}.`);
+            await loadOfferings();
+        } catch {
+            showToast("Network error. Please try again.", true);
+            enrollBtn.disabled = false;
+        }
+        return;
+    }
+
+    const deleteBtn = event.target.closest("[data-delete-offering]");
+    if (!deleteBtn) return;
+
+    const name = deleteBtn.closest("tr").cells[0].textContent;
+    if (!confirm(`Delete offering "${name}"? This cannot be undone.`)) return;
+
+    deleteBtn.disabled = true;
     try {
-        const res = await fetch(`api/semester-courses/${btn.dataset.enroll}/enroll`, {
-            method: "POST",
+        const res = await fetch(`api/semester-courses/${deleteBtn.dataset.deleteOffering}`, {
+            method: "DELETE",
             credentials: "same-origin",
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-            showToast(body.message || "Enrollment failed.", true);
-            btn.disabled = false;
+            showToast(body.message || "Could not delete the offering.", true);
+            deleteBtn.disabled = false;
             return;
         }
-        enrolledIds.add(Number(btn.dataset.enroll));
-        showToast(`Enrolled in ${btn.closest("tr").cells[0].textContent}.`);
-        await loadOfferings();
+        showToast(`Offering "${name}" deleted.`);
+        loadOfferings();
     } catch {
         showToast("Network error. Please try again.", true);
-        btn.disabled = false;
+        deleteBtn.disabled = false;
     }
 });
 

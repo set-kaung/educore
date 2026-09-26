@@ -153,6 +153,36 @@ definitions:
       student_id:
         type: string
     type: object
+  internal_recommendedbook.AddRequest:
+    properties:
+      author:
+        type: string
+      cover_i:
+        type: integer
+      isbn:
+        type: string
+      open_library_key:
+        type: string
+      title:
+        type: string
+    type: object
+  internal_recommendedbook.Book:
+    properties:
+      author:
+        type: string
+      cover_i:
+        type: integer
+      id:
+        type: integer
+      isbn:
+        type: string
+      open_library_key:
+        type: string
+      semester_course_id:
+        type: integer
+      title:
+        type: string
+    type: object
   internal_semestercourse.CourseOffering:
     properties:
       course_code:
@@ -314,6 +344,35 @@ paths:
       summary: Revoke an API key
       tags:
       - admin
+  /api/books/{id}:
+    delete:
+      description: Professor removes a recommended book from their course offering
+      parameters:
+      - description: Recommended book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Remove a recommended book
+      tags:
+      - recommended-books
   /api/courses:
     get:
       description: Get all course listings
@@ -366,6 +425,35 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a new course
+      tags:
+      - courses
+  /api/courses/{id}:
+    delete:
+      description: Soft-delete a course listing. Professor only.
+      parameters:
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Delete a course listing
       tags:
       - courses
   /api/departments:
@@ -425,6 +513,28 @@ paths:
       security:
       - BearerAuth: []
       summary: List the authenticated student's enrolled courses
+      tags:
+      - semester-courses
+  /api/my/taught-courses:
+    get:
+      description: Get all course offerings the current professor teaches
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_semestercourse.CourseOffering'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List the authenticated professor's taught courses
       tags:
       - semester-courses
   /api/professors:
@@ -518,6 +628,147 @@ paths:
       summary: Create semester course schedule
       tags:
       - semester-courses
+  /api/semester-courses/{id}:
+    delete:
+      description: Soft-delete a semester course offering. Professor only.
+      parameters:
+      - description: Semester course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Delete a course offering
+      tags:
+      - semester-courses
+    get:
+      description: Get detailed information about a specific semester course offering
+      parameters:
+      - description: Semester course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_semestercourse.CourseOffering'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Get a single course offering
+      tags:
+      - semester-courses
+  /api/semester-courses/{id}/books:
+    get:
+      description: Get all books a professor has recommended for the given semester
+        course
+      parameters:
+      - description: Semester course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_recommendedbook.Book'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List recommended books for a course offering
+      tags:
+      - recommended-books
+    post:
+      consumes:
+      - application/json
+      description: Professor adds a book to their course offering's recommended reading
+        list
+      parameters:
+      - description: Semester course ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Book details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_recommendedbook.AddRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/internal.ResponseBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_recommendedbook.Book'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal.ResponseBody'
+      security:
+      - BearerAuth: []
+      summary: Add a recommended book to a course offering
+      tags:
+      - recommended-books
   /api/semester-courses/{id}/enroll:
     post:
       description: Enroll the authenticated student in a semester course offering.
