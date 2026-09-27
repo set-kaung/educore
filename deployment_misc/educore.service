@@ -1,0 +1,14 @@
+[Unit]
+Description=EduCore
+Requires=educore-secrets.service
+After=educore-secrets.service
+
+[Service]
+EnvironmentFile=/etc/educore.env
+WorkingDirectory=/home/azureuser/educore
+ExecStart=/home/azureuser/educore/app_linux
+Restart=on-failure
+User=azureuser
+
+[Install]
+WantedBy=multi-user.target
